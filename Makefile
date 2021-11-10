@@ -1,3 +1,4 @@
+GOPATH ?= $(shell go env GOPATH)
 VERSION ?= devel-$(shell git rev-parse --short HEAD)
 DOCKER_URL ?= dcarrillo/whatismyip
 
@@ -13,13 +14,13 @@ integration-test:
 	go test ./integration-tests -v
 
 .PHONY: install-tools
-install-int:
-	@hash golangci-lint > /dev/null 2>&1; if [ $$? -ne 0 ]; then \
-		curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.43.0
+install-tools:
+	@command golangci-lint > /dev/null 2>&1; if [ $$? -ne 0 ]; then \
+		curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOPATH)/bin v1.43.0; \
 	fi
 
-	@hash shadow > /dev/null 2>&1; if [ $$? -ne 0 ]; then \
-		go install golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow@v0.1.7
+	@command $(GOPATH)/shadow > /dev/null 2>&1; if [ $$? -ne 0 ]; then \
+		go install golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow@v0.1.7; \
 	fi
 .PHONY: lint
 lint: install-tools
