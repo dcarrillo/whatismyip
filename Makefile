@@ -33,13 +33,24 @@ build:
 
 .PHONY: docker-build
 docker-build:
-	docker build --tag ${DOCKER_URL}:${VERSION} .
+	docker build --build-arg=ARG_VERSION="${VERSION}" --tag ${DOCKER_URL}:${VERSION} .
+
+.PHONY: docker-push
+docker-push: docker-build
+ifneq (,$(findstring devel-,$(VERSION)))
+	@echo "VERSION is set to ${VERSION}, I can't push devel builds"
+	exit 1
+else
+	docker push ${DOCKER_URL}:${VERSION}
+	docker tag ${DOCKER_URL}:${VERSION} ${DOCKER_URL}:latest
+	docker push ${DOCKER_URL}:latest
+endif
 
 .PHONY: docker-run
 docker-run: docker-build
 	docker run --tty --interactive --rm \
-	-v $$PWD/test/GeoIP2-City-Test.mmdb:/tmp/GeoIP2-City-Test.mmdb:ro \
-	-v $$PWD/test/GeoLite2-ASN-Test.mmdb:/tmp/GeoLite2-ASN-Test.mmdb:ro -p 8080:8080 \
+	-v ${PWD}/test/GeoIP2-City-Test.mmdb:/tmp/GeoIP2-City-Test.mmdb:ro \
+	-v ${PWD}/test/GeoLite2-ASN-Test.mmdb:/tmp/GeoLite2-ASN-Test.mmdb:ro -p 8080:8080 \
 	${DOCKER_URL}:${VERSION} \
 		-geoip2-city /tmp/GeoIP2-City-Test.mmdb \
 		-geoip2-asn /tmp/GeoLite2-ASN-Test.mmdb \
