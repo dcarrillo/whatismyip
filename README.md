@@ -28,8 +28,9 @@ curl -6 ifconfig.es
 - TLS available
 - Can run behind a proxy by trusting a custom header (usually `X-Real-IP`) to figure out the source IP address.
 - IPv4 and IPv6.
-- Geolocation info including ASN. This feature is possible thanks to [maxmind](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data?lang=en) GeoLite2 databases. In order to use these databases, a -icense key is needed. Please visit Maxmind site for further instructions and get a free license.
+- Geolocation info including ASN. This feature is possible thanks to [maxmind](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data?lang=en) GeoLite2 databases. In order to use these databases, a license key is needed. Please visit Maxmind site for further instructions and get a free license.
 - High performance
+- Although a docker image is provided the executable can reload databases and/or SSL certificates by itself, `hup` signal is honored.
 - HTML with templates, text plain and JSON output.
 
 ## Endpoints

@@ -46,7 +46,7 @@ func Setup() {
 	flag.Parse()
 
 	if *ver {
-		fmt.Printf("whaismyip version %s", core.Version)
+		fmt.Printf("whatismyip version %s", core.Version)
 		os.Exit(0)
 	}
 
