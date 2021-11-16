@@ -29,7 +29,7 @@ lint: install-tools
 
 .PHONY: build
 build:
-	CGO_ENABLED=0 go build -ldflags="-X 'github.com/dcarrillo/whatismyip/internal/core.Version=${VERSION}'" -o whatismyip ./cmd
+	CGO_ENABLED=0 go build -ldflags="-s -w -X 'github.com/dcarrillo/whatismyip/internal/core.Version=${VERSION}'" -o whatismyip ./cmd
 
 .PHONY: docker-build
 docker-build:
