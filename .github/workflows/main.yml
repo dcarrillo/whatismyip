@@ -12,12 +12,12 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v2.4.0
 
       - name: install go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.17
+          go-version: "^1.17"
 
       - name: Lint
         run: make lint
@@ -31,10 +31,11 @@ jobs:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
     strategy:
       matrix:
-        goos: [linux]
-        goarch: [amd64]
+        goosarch: [linux-amd64]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v2.4.0
+        with:
+          fetch-depth: 0
 
       - name: Set env
         run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
@@ -45,10 +46,21 @@ jobs:
       - name: Deploy image
         run: make docker-push VERSION=$RELEASE_VERSION
 
-      - uses: wangyoucao577/go-release-action@v1.20
+      - name: Build
+        run: make build VERSION=$RELEASE_VERSION
+
+      - name: Prepare release
+        run: |
+          git log $(git describe HEAD~ --tags --abbrev=0)..HEAD --pretty='format:%h - %s (%cr) <%an>' --no-merges > changelog.txt
+          tar  zcvf whatismyip-$RELEASE_VERSION-${{matrix.goosarch}}.tar.gz whatismyip LICENSE README.md
+          sha256sum whatismyip-$RELEASE_VERSION-${{matrix.goosarch}}.tar.gz > whatismyip-$RELEASE_VERSION-${{matrix.goosarch}}.tar.gz.sha256
+
+      - name: Release
+        uses: softprops/action-gh-release@v0.1.14
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          goos: ${{ matrix.goos }}
-          goarch: ${{ matrix.goarch }}
-          build_command: make build VERSION=$RELEASE_VERSION
-          extra_files: LICENSE README.md
+          body_path: changelog.txt
+          files: |
+            whatismyip-${{env.RELEASE_VERSION}}-${{matrix.goosarch}}.tar.gz
+            whatismyip-${{env.RELEASE_VERSION}}-${{matrix.goosarch}}.tar.gz.sha256
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
