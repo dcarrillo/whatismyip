@@ -5,6 +5,11 @@
   - [Endpoints](#endpoints)
   - [Build](#build)
   - [Usage](#usage)
+  - [Examples](#examples)
+    - [Run a default TCP server](#run-a-default-tcp-server)
+    - [Run a TLS server only](#run-a-tls-server-only)
+    - [Run a default TCP server with a custom template and trust a custom header set by an upstream proxy](#run-a-default-tcp-server-with-a-custom-template-and-trust-a-custom-header-set-by-an-upstream-proxy)
+  - [Download](#download)
   - [Docker](#docker)
     - [Running a container locally using test databases](#running-a-container-locally-using-test-databases)
     - [From Docker Hub](#from-docker-hub)
@@ -25,13 +30,14 @@ curl -6 ifconfig.es
 
 ## Features
 
-- TLS available
+- TLS is avaliable.
 - Can run behind a proxy by trusting a custom header (usually `X-Real-IP`) to figure out the source IP address.
 - IPv4 and IPv6.
 - Geolocation info including ASN. This feature is possible thanks to [maxmind](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data?lang=en) GeoLite2 databases. In order to use these databases, a license key is needed. Please visit Maxmind site for further instructions and get a free license.
-- High performance
-- Although a docker image is provided the executable can reload databases and/or SSL certificates by itself, `hup` signal is honored.
-- HTML with templates, text plain and JSON output.
+- High performance.
+- Self-contained server what can reload GeoLite2 databases and/or SSL certificates without stop/start. The `hup` signal is honored.
+- HTML templates for the landing page.
+- Text plain and JSON output.
 
 ## Endpoints
 
@@ -82,9 +88,33 @@ Usage of ./whatismyip:
         Output version information and exit
 ```
 
+## Examples
+
+### Run a default TCP server
+
+```bash
+./whatismyip -geoip2-city ./test/GeoIP2-City-Test.mmdb -geoip2-asn ./test/GeoLite2-ASN-Test.mmdb
+```
+
+### Run a TLS server only
+
+```bash
+./whatismyip -geoip2-city ./test/GeoIP2-City-Test.mmdb -geoip2-asn ./test/GeoLite2-ASN-Test.mmdb -bind "" -tls-bind :8081 -tls-crt ./test/server.pem -tls-key ./test/server.key
+```
+
+### Run a default TCP server with a custom template and trust a custom header set by an upstream proxy
+
+```bash
+./whatismyip -geoip2-city ./test/GeoIP2-City-Test.mmdb -geoip2-asn ./test/GeoLite2-ASN-Test.mmdb -trusted-header X-Real-IP -template mytemplate.tmpl
+```
+
+## Download
+
+Download latest version from https://github.com/dcarrillo/whatismyip/releases
+
 ## Docker
 
-An ultra-light (13MB) image is available.
+An ultra-light (~9MB) image is available.
 
 ### Running a container locally using test databases
 
