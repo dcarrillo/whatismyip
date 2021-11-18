@@ -9,7 +9,18 @@ import (
 )
 
 func TestIP4RootFromCli(t *testing.T) {
-	uas := []string{"", "curl", "wget", "libwww-perl", "python", "ansible-httpget", "HTTPie", "WindowsPowerShell", "http_request", "Go-http-client"}
+	uas := []string{
+		"",
+		"curl",
+		"wget",
+		"libwww-perl",
+		"python",
+		"ansible-httpget",
+		"HTTPie",
+		"WindowsPowerShell",
+		"http_request",
+		"Go-http-client",
+	}
 
 	req, _ := http.NewRequest("GET", "/", nil)
 	req.Header.Set("X-Real-IP", testIP.ipv4)

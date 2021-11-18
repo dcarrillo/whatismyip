@@ -112,7 +112,8 @@ func runTLSServer() {
 
 	go func() {
 		log.Printf("Starting TLS server listening on %s", setting.App.TLSAddress)
-		if err := tlsServer.ListenAndServeTLS(setting.App.TLSCrtPath, setting.App.TLSKeyPath); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		if err := tlsServer.ListenAndServeTLS(setting.App.TLSCrtPath, setting.App.TLSKeyPath); err != nil &&
+			!errors.Is(err, http.ErrServerClosed) {
 			log.Fatal(err)
 		}
 		log.Printf("Stopping TLS server...")

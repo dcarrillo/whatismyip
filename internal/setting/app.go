@@ -36,11 +36,23 @@ func Setup() {
 	city := flag.String("geoip2-city", "", "Path to GeoIP2 city database")
 	asn := flag.String("geoip2-asn", "", "Path to GeoIP2 ASN database")
 	template := flag.String("template", "", "Path to template file")
-	address := flag.String("bind", defaultAddress, "Listening address (see https://pkg.go.dev/net?#Listen)")
-	addressTLS := flag.String("tls-bind", "", "Listening address for TLS (see https://pkg.go.dev/net?#Listen)")
+	address := flag.String(
+		"bind",
+		defaultAddress,
+		"Listening address (see https://pkg.go.dev/net?#Listen)",
+	)
+	addressTLS := flag.String(
+		"tls-bind",
+		"",
+		"Listening address for TLS (see https://pkg.go.dev/net?#Listen)",
+	)
 	tlsCrtPath := flag.String("tls-crt", "", "When using TLS, path to certificate file")
 	tlsKeyPath := flag.String("tls-key", "", "When using TLS, path to private key file")
-	trustedHeader := flag.String("trusted-header", "", "Trusted request header for remote IP (e.g. X-Real-IP)")
+	trustedHeader := flag.String(
+		"trusted-header",
+		"",
+		"Trusted request header for remote IP (e.g. X-Real-IP)",
+	)
 	ver := flag.Bool("version", false, "Output version information and exit")
 
 	flag.Parse()
