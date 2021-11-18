@@ -51,22 +51,7 @@ func runHandler() {
 		s = <-signalChan
 
 		if s == syscall.SIGHUP {
-			models.CloseDBs()
 			models.Setup(setting.App.GeodbPath.City, setting.App.GeodbPath.ASN)
-			router.SetupTemplate(engine)
-
-			if setting.App.BindAddress != "" {
-				if err := tcpServer.Shutdown(ctx); err != nil {
-					log.Printf("TCP server forced to shutdown: %s", err)
-				}
-				runTCPServer()
-			}
-			if setting.App.TLSAddress != "" {
-				if err := tlsServer.Shutdown(ctx); err != nil {
-					log.Printf("TLS server forced to shutdown: %s", err)
-				}
-				runTLSServer()
-			}
 		} else {
 			log.Printf("Shutting down...")
 			if setting.App.BindAddress != "" {
