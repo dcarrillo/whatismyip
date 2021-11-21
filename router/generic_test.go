@@ -49,7 +49,7 @@ func TestHost(t *testing.T) {
 
 func TestClientPort(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/client-port", nil)
-	req.RemoteAddr = net.JoinHostPort(testIP.ipv4 , "1000")
+	req.RemoteAddr = net.JoinHostPort(testIP.ipv4, "1000")
 	req.Header.Set("X-Real-IP", testIP.ipv4)
 
 	w := httptest.NewRecorder()
@@ -118,7 +118,7 @@ X-Real-Ip: 81.2.69.192
 `
 
 	req, _ := http.NewRequest("GET", "/all", nil)
-	req.RemoteAddr = net.JoinHostPort(testIP.ipv4 , "1000")
+	req.RemoteAddr = net.JoinHostPort(testIP.ipv4, "1000")
 	req.Host = "test"
 	req.Header.Set("X-Real-IP", testIP.ipv4)
 	req.Header.Set("Header1", "one")

@@ -22,8 +22,14 @@ install-tools:
 	@command $(GOPATH)/shadow > /dev/null 2>&1; if [ $$? -ne 0 ]; then \
 		go install golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow@v0.1.7; \
 	fi
+
+	@command $(GOPATH)/golines > /dev/null 2>&1; if [ $$? -ne 0 ]; then \
+		go install github.com/segmentio/golines@latest; \
+	fi
 .PHONY: lint
 lint: install-tools
+	gofmt -l . && test -z $$(gofmt -l .)
+	golines -l . && test -z $$(golines -l .)
 	golangci-lint run
 	shadow ./...
 
