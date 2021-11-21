@@ -7,7 +7,7 @@
   - [Usage](#usage)
   - [Examples](#examples)
     - [Run a default TCP server](#run-a-default-tcp-server)
-    - [Run a TLS server only](#run-a-tls-server-only)
+    - [Run a TLS (HTTP/2) server only](#run-a-tls-http2-server-only)
     - [Run a default TCP server with a custom template and trust a custom header set by an upstream proxy](#run-a-default-tcp-server-with-a-custom-template-and-trust-a-custom-header-set-by-an-upstream-proxy)
   - [Download](#download)
   - [Docker](#docker)
@@ -30,7 +30,7 @@ curl -6 ifconfig.es
 
 ## Features
 
-- TLS is avaliable.
+- TLS and HTTP/2.
 - Can run behind a proxy by trusting a custom header (usually `X-Real-IP`) to figure out the source IP address.
 - IPv4 and IPv6.
 - Geolocation info including ASN. This feature is possible thanks to [maxmind](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data?lang=en) GeoLite2 databases. In order to use these databases, a license key is needed. Please visit Maxmind site for further instructions and get a free license.
@@ -96,7 +96,7 @@ Usage of ./whatismyip:
 ./whatismyip -geoip2-city ./test/GeoIP2-City-Test.mmdb -geoip2-asn ./test/GeoLite2-ASN-Test.mmdb
 ```
 
-### Run a TLS server only
+### Run a TLS (HTTP/2) server only
 
 ```bash
 ./whatismyip -geoip2-city ./test/GeoIP2-City-Test.mmdb -geoip2-asn ./test/GeoLite2-ASN-Test.mmdb -bind "" -tls-bind :8081 -tls-crt ./test/server.pem -tls-key ./test/server.key

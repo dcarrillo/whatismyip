@@ -1,6 +1,7 @@
 package router
 
 import (
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -48,7 +49,7 @@ func TestHost(t *testing.T) {
 
 func TestClientPort(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/client-port", nil)
-	req.RemoteAddr = testIP.ipv4 + ":" + "1000"
+	req.RemoteAddr = net.JoinHostPort(testIP.ipv4 , "1000")
 	req.Header.Set("X-Real-IP", testIP.ipv4)
 
 	w := httptest.NewRecorder()
@@ -71,10 +72,10 @@ func TestNotFound(t *testing.T) {
 
 func TestJSON(t *testing.T) {
 	expectedIPv4 := `{"client_port":"1000","ip":"81.2.69.192","ip_version":4,"country":"United Kingdom","country_code":"GB","city":"London","latitude":51.5142,"longitude":-0.0931,"postal_code":"","time_zone":"Europe/London","asn":0,"asn_organization":"","host":"test","headers":{"X-Real-Ip":["81.2.69.192"]}}`
-	expectedIPv6 := `{"asn":3352, "asn_organization":"TELEFONICA DE ESPANA", "city":"", "client_port":"9000", "country":"", "country_code":"", "headers":{"X-Real-Ip":["2a02:9000::1"]}, "host":"test", "ip":"2a02:9000::1", "ip_version":6, "latitude":0, "longitude":0, "postal_code":"", "time_zone":""}`
+	expectedIPv6 := `{"asn":3352, "asn_organization":"TELEFONICA DE ESPANA", "city":"", "client_port":"1000", "country":"", "country_code":"", "headers":{"X-Real-Ip":["2a02:9000::1"]}, "host":"test", "ip":"2a02:9000::1", "ip_version":6, "latitude":0, "longitude":0, "postal_code":"", "time_zone":""}`
 
 	req, _ := http.NewRequest("GET", "/json", nil)
-	req.RemoteAddr = testIP.ipv4 + ":" + "1000"
+	req.RemoteAddr = net.JoinHostPort(testIP.ipv4, "1000")
 	req.Host = "test"
 	req.Header.Set("X-Real-IP", testIP.ipv4)
 
@@ -85,7 +86,7 @@ func TestJSON(t *testing.T) {
 	assert.Equal(t, contentType.json, w.Header().Get("Content-Type"))
 	assert.JSONEq(t, expectedIPv4, w.Body.String())
 
-	req.RemoteAddr = testIP.ipv6 + ":" + "1000"
+	req.RemoteAddr = net.JoinHostPort(testIP.ipv6, "1000")
 	req.Host = "test"
 	req.Header.Set("X-Real-IP", testIP.ipv6)
 
@@ -117,7 +118,7 @@ X-Real-Ip: 81.2.69.192
 `
 
 	req, _ := http.NewRequest("GET", "/all", nil)
-	req.RemoteAddr = testIP.ipv4 + ":" + "1000"
+	req.RemoteAddr = net.JoinHostPort(testIP.ipv4 , "1000")
 	req.Host = "test"
 	req.Header.Set("X-Real-IP", testIP.ipv4)
 	req.Header.Set("Header1", "one")

@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"path/filepath"
 	"regexp"
-	"strings"
 
 	"github.com/dcarrillo/whatismyip/internal/httputils"
 	"github.com/dcarrillo/whatismyip/internal/setting"
@@ -46,12 +45,14 @@ func getRoot(ctx *gin.Context) {
 }
 
 func getClientPortAsString(ctx *gin.Context) {
-	ctx.String(http.StatusOK, strings.Split(ctx.Request.RemoteAddr, ":")[1]+"\n")
+	_, port, _ := net.SplitHostPort(ctx.Request.RemoteAddr)
+	ctx.String(http.StatusOK, port+"\n")
 }
 
 func getAllAsString(ctx *gin.Context) {
 	output := "IP: " + ctx.ClientIP() + "\n"
-	output += "Client Port: " + strings.Split(ctx.Request.RemoteAddr, ":")[1] + "\n"
+	_, port, _ := net.SplitHostPort(ctx.Request.RemoteAddr)
+	output += "Client Port: " + port + "\n"
 
 	r := service.Geo{IP: net.ParseIP(ctx.ClientIP())}
 	if record := r.LookUpCity(); record != nil {
@@ -82,10 +83,11 @@ func jsonOutput(ctx *gin.Context) JSONResponse {
 		version = 6
 	}
 
+	_, port, _ := net.SplitHostPort(ctx.Request.RemoteAddr)
 	return JSONResponse{
 		IP:              ctx.ClientIP(),
 		IPVersion:       version,
-		ClientPort:      strings.Split(ctx.Request.RemoteAddr, ":")[1],
+		ClientPort:      port,
 		Country:         cityRecord.Country.Names["en"],
 		CountryCode:     cityRecord.Country.ISOCode,
 		City:            cityRecord.City.Names["en"],
