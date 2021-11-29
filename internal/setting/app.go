@@ -1,6 +1,8 @@
 package setting
 
 import (
+	"bytes"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -26,74 +28,75 @@ type settings struct {
 	TLSKeyPath    string
 	TrustedHeader string
 	Server        serverSettings
+	version       bool
 }
 
 const defaultAddress = ":8080"
 
-var App *settings
+var ErrVersion = errors.New("setting: version requested")
+var App = settings{
+	// hard-coded for the time being
+	Server: serverSettings{
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	},
+}
 
-func Setup() {
-	city := flag.String("geoip2-city", "", "Path to GeoIP2 city database")
-	asn := flag.String("geoip2-asn", "", "Path to GeoIP2 ASN database")
-	template := flag.String("template", "", "Path to template file")
-	address := flag.String(
+func Setup(args []string) (output string, err error) {
+	flags := flag.NewFlagSet("whatismyip", flag.ContinueOnError)
+	var buf bytes.Buffer
+	flags.SetOutput(&buf)
+
+	flags.StringVar(&App.GeodbPath.City, "geoip2-city", "", "Path to GeoIP2 city database")
+	flags.StringVar(&App.GeodbPath.ASN, "geoip2-asn", "", "Path to GeoIP2 ASN database")
+	flags.StringVar(&App.TemplatePath, "template", "", "Path to template file")
+	flags.StringVar(
+		&App.BindAddress,
 		"bind",
 		defaultAddress,
 		"Listening address (see https://pkg.go.dev/net?#Listen)",
 	)
-	addressTLS := flag.String(
+	flags.StringVar(
+		&App.TLSAddress,
 		"tls-bind",
 		"",
 		"Listening address for TLS (see https://pkg.go.dev/net?#Listen)",
 	)
-	tlsCrtPath := flag.String("tls-crt", "", "When using TLS, path to certificate file")
-	tlsKeyPath := flag.String("tls-key", "", "When using TLS, path to private key file")
-	trustedHeader := flag.String(
+	flags.StringVar(&App.TLSCrtPath, "tls-crt", "", "When using TLS, path to certificate file")
+	flags.StringVar(&App.TLSKeyPath, "tls-key", "", "When using TLS, path to private key file")
+	flags.StringVar(&App.TrustedHeader,
 		"trusted-header",
 		"",
 		"Trusted request header for remote IP (e.g. X-Real-IP)",
 	)
-	ver := flag.Bool("version", false, "Output version information and exit")
+	flags.BoolVar(&App.version, "version", false, "Output version information and exit")
 
-	flag.Parse()
-
-	if *ver {
-		fmt.Printf("whatismyip version %s", core.Version)
-		os.Exit(0)
+	err = flags.Parse(args)
+	if err != nil {
+		return buf.String(), err
 	}
 
-	if *city == "" || *asn == "" {
-		exitWithError("geoip2-city and geoip2-asn parameters are mandatory")
+	if App.version {
+		return fmt.Sprintf("whatismyip version %s", core.Version), ErrVersion
 	}
 
-	if (*addressTLS != "") && (*tlsCrtPath == "" || *tlsKeyPath == "") {
-		exitWithError("In order to use TLS -tls-crt and -tls-key flags are mandatory")
+	if App.GeodbPath.City == "" || App.GeodbPath.ASN == "" {
+		return "", fmt.Errorf("geoip2-city and geoip2-asn parameters are mandatory")
 	}
 
-	if *template != "" {
-		info, err := os.Stat(*template)
-		if os.IsNotExist(err) || info.IsDir() {
-			exitWithError(*template + " doesn't exist or it's not a file")
+	if (App.TLSAddress != "") && (App.TLSCrtPath == "" || App.TLSKeyPath == "") {
+		return "", fmt.Errorf("In order to use TLS -tls-crt and -tls-key flags are mandatory")
+	}
+
+	if App.TemplatePath != "" {
+		info, err := os.Stat(App.TemplatePath)
+		if os.IsNotExist(err) {
+			return "", fmt.Errorf("%s no such file or directory", App.TemplatePath)
+		}
+		if info.IsDir() {
+			return "", fmt.Errorf("%s must be a file", App.TemplatePath)
 		}
 	}
 
-	App = &settings{
-		GeodbPath:     geodbPath{City: *city, ASN: *asn},
-		TemplatePath:  *template,
-		BindAddress:   *address,
-		TLSAddress:    *addressTLS,
-		TLSCrtPath:    *tlsCrtPath,
-		TLSKeyPath:    *tlsKeyPath,
-		TrustedHeader: *trustedHeader,
-		Server: serverSettings{
-			ReadTimeout:  10 * time.Second,
-			WriteTimeout: 10 * time.Second,
-		},
-	}
-}
-
-func exitWithError(error string) {
-	fmt.Printf("%s\n\n", error)
-	flag.Usage()
-	os.Exit(1)
+	return buf.String(), nil
 }
