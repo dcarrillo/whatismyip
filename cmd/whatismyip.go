@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"errors"
+	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -24,7 +26,15 @@ var (
 )
 
 func main() {
-	setting.Setup()
+	o, err := setting.Setup(os.Args[1:])
+	if err == flag.ErrHelp || err == setting.ErrVersion {
+		fmt.Print(o)
+		os.Exit(0)
+	} else if err != nil {
+		fmt.Print(err)
+		os.Exit(1)
+	}
+
 	models.Setup(setting.App.GeodbPath.City, setting.App.GeodbPath.ASN)
 	setupEngine()
 	router.SetupTemplate(engine)
