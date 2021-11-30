@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// SetupTemplate reads and parses a template from file
 func SetupTemplate(r *gin.Engine) {
 	if setting.App.TemplatePath == "" {
 		t, _ := template.New("home").Parse(home)
@@ -18,6 +19,7 @@ func SetupTemplate(r *gin.Engine) {
 	}
 }
 
+// Setup defines the endpoints
 func Setup(r *gin.Engine) {
 	r.GET("/", getRoot)
 	r.GET("/client-port", getClientPortAsString)

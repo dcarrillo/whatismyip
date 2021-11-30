@@ -33,7 +33,10 @@ type settings struct {
 
 const defaultAddress = ":8080"
 
+// ErrVersion is the custom error triggered when -version flag is passed
 var ErrVersion = errors.New("setting: version requested")
+
+// App is the var with the parsed settings
 var App = settings{
 	// hard-coded for the time being
 	Server: serverSettings{
@@ -42,6 +45,7 @@ var App = settings{
 	},
 }
 
+// Setup initializes the App object parsing the flags
 func Setup(args []string) (output string, err error) {
 	flags := flag.NewFlagSet("whatismyip", flag.ContinueOnError)
 	var buf bytes.Buffer

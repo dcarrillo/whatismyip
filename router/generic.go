@@ -14,6 +14,7 @@ import (
 
 const userAgentPattern = `curl|wget|libwww-perl|python|ansible-httpget|HTTPie|WindowsPowerShell|http_request|Go-http-client|^$`
 
+// JSONResponse maps data as json
 type JSONResponse struct {
 	IP              string      `json:"ip"`
 	IPVersion       byte        `json:"ip_version"`

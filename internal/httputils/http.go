@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// HeadersToSortedString shorts and dumps http.Header to a string separated by \n
 func HeadersToSortedString(headers http.Header) string {
 	var output string
 
@@ -31,6 +32,7 @@ func HeadersToSortedString(headers http.Header) string {
 	return output
 }
 
+// GetLogFormatter returns our custom log format
 func GetLogFormatter(param gin.LogFormatterParams) string {
 	return fmt.Sprintf("%s - [%s] \"%s %s %s\" %d %d %d %s \"%s\" \"%s\" \"%s\"\n",
 		param.ClientIP,
@@ -57,9 +59,8 @@ func normalizeLog(log interface{}) interface{} {
 	case []string:
 		if len(v) == 0 {
 			return "-"
-		} else {
-			return strings.Join(v, ", ")
 		}
+		return strings.Join(v, ", ")
 	}
 
 	return log

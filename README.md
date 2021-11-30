@@ -1,5 +1,8 @@
 # What is my IP address
 
+[![CI](https://github.com/dcarrillo/whatismyip/workflows/CI/badge.svg)](https://github.com/dcarrillo/whatismyip/actions)
+[![Go Report Card](https://goreportcard.com/badge/github.com/dcarrillo/whatismyip)](https://goreportcard.com/report/github.com/dcarrillo/whatismyip)
+
 - [What is my IP address](#what-is-my-ip-address)
   - [Features](#features)
   - [Endpoints](#endpoints)

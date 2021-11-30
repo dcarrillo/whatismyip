@@ -7,10 +7,12 @@ import (
 	"github.com/oschwald/maxminddb-golang"
 )
 
+// Record is the interface to be implemented for record operations
 type Record interface {
 	LookUp(ip net.IP)
 }
 
+// GeoRecord is the model for City database
 type GeoRecord struct {
 	Country struct {
 		ISOCode string            `maxminddb:"iso_code"`
@@ -29,6 +31,7 @@ type GeoRecord struct {
 	} `maxminddb:"postal"`
 }
 
+// ASNRecord is the model for ASN database
 type ASNRecord struct {
 	AutonomousSystemNumber       uint   `maxminddb:"autonomous_system_number"`
 	AutonomousSystemOrganization string `maxminddb:"autonomous_system_organization"`
@@ -51,11 +54,13 @@ func openMMDB(path string) *maxminddb.Reader {
 	return db
 }
 
+// Setup opens all Geolite2 databases
 func Setup(cityPath string, asnPath string) {
 	db.city = openMMDB(cityPath)
 	db.asn = openMMDB(asnPath)
 }
 
+// CloseDBs unmaps from memory and frees resources to the filesystem
 func CloseDBs() {
 	log.Printf("Closing dbs...")
 	if err := db.city.Close(); err != nil {
@@ -66,6 +71,7 @@ func CloseDBs() {
 	}
 }
 
+// LookUp an IP and get city data
 func (record *GeoRecord) LookUp(ip net.IP) error {
 	err := db.city.Lookup(ip, record)
 	if err != nil {
@@ -75,6 +81,7 @@ func (record *GeoRecord) LookUp(ip net.IP) error {
 	return nil
 }
 
+// LookUp an IP and get ASN data
 func (record *ASNRecord) LookUp(ip net.IP) error {
 	err := db.asn.Lookup(ip, record)
 	if err != nil {
