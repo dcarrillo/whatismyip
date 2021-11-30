@@ -54,10 +54,11 @@ const expectedHome = `
 
 func TestDefaultTemplate(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/", nil)
-
-	req.Header["Header1"] = []string{"value1"}
-	req.Header["Header2"] = []string{"value21", "value22"}
-	req.Header["Header3"] = []string{"value3"}
+	req.Header = map[string][]string{
+		"Header1": {"value1"},
+		"Header2": {"value21", "value22"},
+		"Header3": {"value3"},
+	}
 
 	tmpl, _ := template.New("home").Parse(home)
 	response := JSONResponse{
