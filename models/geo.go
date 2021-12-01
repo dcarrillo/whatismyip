@@ -73,8 +73,7 @@ func CloseDBs() {
 
 // LookUp an IP and get city data
 func (record *GeoRecord) LookUp(ip net.IP) error {
-	err := db.city.Lookup(ip, record)
-	if err != nil {
+	if err := db.city.Lookup(ip, record); err != nil {
 		return err
 	}
 
@@ -83,8 +82,7 @@ func (record *GeoRecord) LookUp(ip net.IP) error {
 
 // LookUp an IP and get ASN data
 func (record *ASNRecord) LookUp(ip net.IP) error {
-	err := db.asn.Lookup(ip, record)
-	if err != nil {
+	if err := db.asn.Lookup(ip, record); err != nil {
 		return err
 	}
 
