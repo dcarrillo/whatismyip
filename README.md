@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/dcarrillo/whatismyip/workflows/CI/badge.svg)](https://github.com/dcarrillo/whatismyip/actions)
 [![Go Report Card](https://goreportcard.com/badge/github.com/dcarrillo/whatismyip)](https://goreportcard.com/report/github.com/dcarrillo/whatismyip)
+[![GitHub release](https://img.shields.io/github/release/dcarrillo/whatismyip.svg)](https://github.com/dcarrillo/whatismyip/releases/)
 
 - [What is my IP address](#what-is-my-ip-address)
   - [Features](#features)
