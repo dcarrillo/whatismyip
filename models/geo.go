@@ -7,11 +7,6 @@ import (
 	"github.com/oschwald/maxminddb-golang"
 )
 
-// Record is the interface to be implemented for record operations
-type Record interface {
-	LookUp(ip net.IP)
-}
-
 // GeoRecord is the model for City database
 type GeoRecord struct {
 	Country struct {

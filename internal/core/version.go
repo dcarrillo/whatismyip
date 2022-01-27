@@ -1,4 +1,4 @@
 package core
 
-// Version to be defined on build time
+// Version to be defined at build time
 var Version = "tobedefined"
