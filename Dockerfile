@@ -1,4 +1,4 @@
-FROM golang:1.17-alpine as builder
+FROM golang:1.18-alpine as builder
 
 ARG ARG_VERSION
 ENV VERSION $ARG_VERSION
@@ -7,7 +7,7 @@ WORKDIR /app
 
 COPY . .
 
-RUN apk add make && make build VERSION=$VERSION
+RUN apk add make git && make build VERSION=$VERSION
 
 # Build final image
 FROM scratch
