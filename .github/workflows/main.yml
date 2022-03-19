@@ -51,7 +51,7 @@ jobs:
 
       - name: Prepare release
         run: |
-          git log $(git describe HEAD~ --tags --abbrev=0)..HEAD --pretty='format:%h - %s (%cr) <%an>' --no-merges > changelog.txt
+          git log $(git describe HEAD~ --tags --abbrev=0)..HEAD --pretty='format:%h - %s <%an>' --no-merges > changelog.txt
           tar  zcvf whatismyip-$RELEASE_VERSION-${{matrix.goosarch}}.tar.gz whatismyip LICENSE README.md
           sha256sum whatismyip-$RELEASE_VERSION-${{matrix.goosarch}}.tar.gz > whatismyip-$RELEASE_VERSION-${{matrix.goosarch}}.tar.gz.sha256
 
