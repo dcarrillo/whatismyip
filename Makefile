@@ -16,11 +16,11 @@ integration-test:
 .PHONY: install-tools
 install-tools:
 	@command golangci-lint > /dev/null 2>&1; if [ $$? -ne 0 ]; then \
-		curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOPATH)/bin v1.43.0; \
+		curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOPATH)/bin v1.45.0; \
 	fi
 
 	@command $(GOPATH)/shadow > /dev/null 2>&1; if [ $$? -ne 0 ]; then \
-		go install golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow@v0.1.7; \
+		go install golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow@v0.1.10; \
 	fi
 
 	@command $(GOPATH)/golines > /dev/null 2>&1; if [ $$? -ne 0 ]; then \
