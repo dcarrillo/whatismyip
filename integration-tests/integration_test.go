@@ -34,6 +34,7 @@ func buildContainer() testcontainers.ContainerRequest {
 			"-tls-crt", "/tmp/server.pem",
 			"-tls-key", "/tmp/server.key",
 			"-trusted-header", "X-Real-IP",
+			"-enable-secure-headers",
 		},
 		ExposedPorts: []string{"8000:8000", "8001:8001"},
 		WaitingFor:   wait.ForLog("Starting TLS server listening on :8001"),

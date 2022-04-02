@@ -20,15 +20,16 @@ type serverSettings struct {
 	WriteTimeout time.Duration
 }
 type settings struct {
-	GeodbPath     geodbPath
-	TemplatePath  string
-	BindAddress   string
-	TLSAddress    string
-	TLSCrtPath    string
-	TLSKeyPath    string
-	TrustedHeader string
-	Server        serverSettings
-	version       bool
+	GeodbPath           geodbPath
+	TemplatePath        string
+	BindAddress         string
+	TLSAddress          string
+	TLSCrtPath          string
+	TLSKeyPath          string
+	TrustedHeader       string
+	EnableSecureHeaders bool
+	Server              serverSettings
+	version             bool
 }
 
 const defaultAddress = ":8080"
@@ -74,6 +75,12 @@ func Setup(args []string) (output string, err error) {
 		"Trusted request header for remote IP (e.g. X-Real-IP)",
 	)
 	flags.BoolVar(&App.version, "version", false, "Output version information and exit")
+	flags.BoolVar(
+		&App.EnableSecureHeaders,
+		"enable-secure-headers",
+		false,
+		"Add sane security-related headers to every response",
+	)
 
 	err = flags.Parse(args)
 	if err != nil {
