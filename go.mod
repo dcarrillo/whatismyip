@@ -4,9 +4,10 @@ go 1.18
 
 require (
 	github.com/gin-gonic/gin v1.7.7
-	github.com/oschwald/maxminddb-golang v1.8.0
+	github.com/oschwald/maxminddb-golang v1.9.0
 	github.com/stretchr/testify v1.7.1
 	github.com/testcontainers/testcontainers-go v0.12.0
+	github.com/unrolled/secure v1.10.0
 )
 
 require (
@@ -15,10 +16,10 @@ require (
 	github.com/Microsoft/hcsshim v0.9.2 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/containerd/cgroups v1.0.3 // indirect
-	github.com/containerd/containerd v1.6.1 // indirect
+	github.com/containerd/containerd v1.6.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
-	github.com/docker/docker v20.10.13+incompatible // indirect
+	github.com/docker/docker v20.10.14+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
@@ -41,19 +42,19 @@ require (
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
-	github.com/opencontainers/runc v1.1.0 // indirect
+	github.com/opencontainers/runc v1.1.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/ugorji/go/codec v1.2.7 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	golang.org/x/crypto v0.0.0-20220315160706-3147a52a75dd // indirect
-	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
-	golang.org/x/sys v0.0.0-20220319134239-a9b59b0215f8 // indirect
+	golang.org/x/crypto v0.0.0-20220331220935-ae2d96664a29 // indirect
+	golang.org/x/net v0.0.0-20220401154927-543a649e0bdd // indirect
+	golang.org/x/sys v0.0.0-20220330033206-e17cdc41300f // indirect
 	golang.org/x/text v0.3.7 // indirect
-	google.golang.org/genproto v0.0.0-20220317150908-0efb43f6373e // indirect
+	google.golang.org/genproto v0.0.0-20220401170504-314d38edb7de // indirect
 	google.golang.org/grpc v1.45.0 // indirect
-	google.golang.org/protobuf v1.27.1 // indirect
+	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
