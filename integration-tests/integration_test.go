@@ -70,16 +70,18 @@ func TestContainerIntegration(t *testing.T) {
 	}()
 
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	for _, url := range []string{"http://localhost:8000/json", "https://localhost:8001/json"} {
-		resp, _ := http.Get(url)
+	for _, url := range []string{"http://localhost:8000", "https://localhost:8001"} {
+		client := &http.Client{}
+		req, _ := http.NewRequest("GET", url, nil)
+		req.Header.Set("Accept", "application/json")
+		resp, _ := client.Do(req)
 		assert.Equal(t, 200, resp.StatusCode)
 
-		var dat router.JSONResponse
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		assert.NoError(t, json.Unmarshal(body, &dat))
+		assert.NoError(t, json.Unmarshal(body, &router.JSONResponse{}))
 	}
 }

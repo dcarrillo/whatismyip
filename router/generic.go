@@ -4,15 +4,12 @@ import (
 	"net"
 	"net/http"
 	"path/filepath"
-	"regexp"
 
 	"github.com/dcarrillo/whatismyip/internal/httputils"
 	"github.com/dcarrillo/whatismyip/internal/setting"
 	"github.com/dcarrillo/whatismyip/service"
 	"github.com/gin-gonic/gin"
 )
-
-const userAgentPattern = `curl|wget|libwww-perl|python|ansible-httpget|HTTPie|WindowsPowerShell|http_request|Go-http-client|^$`
 
 // JSONResponse maps data as json
 type JSONResponse struct {
@@ -33,15 +30,17 @@ type JSONResponse struct {
 }
 
 func getRoot(ctx *gin.Context) {
-	reg := regexp.MustCompile(userAgentPattern)
-	if reg.Match([]byte(ctx.Request.UserAgent())) {
-		ctx.String(http.StatusOK, ctx.ClientIP())
-	} else {
+	switch ctx.NegotiateFormat(gin.MIMEPlain, gin.MIMEHTML, gin.MIMEJSON) {
+	case gin.MIMEHTML:
 		name := "home"
 		if setting.App.TemplatePath != "" {
 			name = filepath.Base(setting.App.TemplatePath)
 		}
 		ctx.HTML(http.StatusOK, name, jsonOutput(ctx))
+	case gin.MIMEJSON:
+		getJSON(ctx)
+	default:
+		ctx.String(http.StatusOK, ctx.ClientIP()+"\n")
 	}
 }
 

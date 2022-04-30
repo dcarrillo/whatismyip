@@ -9,31 +9,80 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestIP4RootFromCli(t *testing.T) {
-	uas := []string{
-		"",
-		"curl",
-		"wget",
-		"libwww-perl",
-		"python",
-		"ansible-httpget",
-		"HTTPie",
-		"WindowsPowerShell",
-		"http_request",
-		"Go-http-client",
+func TestRootContentType(t *testing.T) {
+	tests := []struct {
+		name     string
+		accepted string
+		expected string
+	}{
+		{
+			name:     "Accept wildcard",
+			accepted: "*/*",
+			expected: contentType.text,
+		},
+		{
+			name:     "Bogus accept",
+			accepted: "bogus/plain",
+			expected: contentType.text,
+		},
+		{
+			name:     "Accept plain text",
+			accepted: "text/plain",
+			expected: contentType.text,
+		},
+		{
+			name:     "Accept json",
+			accepted: "application/json",
+			expected: contentType.json,
+		},
 	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req, _ := http.NewRequest("GET", "/", nil)
+			req.Header.Set(trustedHeader, testIP.ipv4)
+			req.Header.Set("Accept", tt.accepted)
 
-	req, _ := http.NewRequest("GET", "/", nil)
-	req.Header.Set("X-Real-IP", testIP.ipv4)
+			w := httptest.NewRecorder()
+			app.ServeHTTP(w, req)
 
-	for _, ua := range uas {
-		req.Header.Set("User-Agent", ua)
+			assert.Equal(t, 200, w.Code)
+			assert.Equal(t, tt.expected, w.Header().Get("Content-Type"))
+		})
+	}
+}
 
-		w := httptest.NewRecorder()
-		app.ServeHTTP(w, req)
+func TestGetIP(t *testing.T) {
+	expected := testIP.ipv4 + "\n"
+	tests := []struct {
+		name     string
+		accepted string
+	}{
+		{
+			name:     "No browser",
+			accepted: "*/*",
+		},
+		{
+			name:     "Bogus accept",
+			accepted: "bogus/plain",
+		},
+		{
+			name:     "Plain accept",
+			accepted: "text/plain",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req, _ := http.NewRequest("GET", "/", nil)
+			req.Header.Set(trustedHeader, testIP.ipv4)
+			req.Header.Set("Accept", tt.accepted)
 
-		assert.Equal(t, 200, w.Code)
-		assert.Equal(t, testIP.ipv4, w.Body.String())
+			w := httptest.NewRecorder()
+			app.ServeHTTP(w, req)
+
+			assert.Equal(t, 200, w.Code)
+			assert.Equal(t, expected, w.Body.String())
+			assert.Equal(t, contentType.text, w.Header().Get("Content-Type"))
+		})
 	}
 }
 
@@ -50,7 +99,7 @@ func TestHost(t *testing.T) {
 func TestClientPort(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/client-port", nil)
 	req.RemoteAddr = net.JoinHostPort(testIP.ipv4, "1000")
-	req.Header.Set("X-Real-IP", testIP.ipv4)
+	req.Header.Set(trustedHeader, testIP.ipv4)
 
 	w := httptest.NewRecorder()
 	app.ServeHTTP(w, req)
@@ -71,31 +120,44 @@ func TestNotFound(t *testing.T) {
 }
 
 func TestJSON(t *testing.T) {
-	expectedIPv4 := `{"client_port":"1000","ip":"81.2.69.192","ip_version":4,"country":"United Kingdom","country_code":"GB","city":"London","latitude":51.5142,"longitude":-0.0931,"postal_code":"","time_zone":"Europe/London","asn":0,"asn_organization":"","host":"test","headers":{"X-Real-Ip":["81.2.69.192"]}}`
-	expectedIPv6 := `{"asn":3352, "asn_organization":"TELEFONICA DE ESPANA", "city":"", "client_port":"1000", "country":"", "country_code":"", "headers":{"X-Real-Ip":["2a02:9000::1"]}, "host":"test", "ip":"2a02:9000::1", "ip_version":6, "latitude":0, "longitude":0, "postal_code":"", "time_zone":""}`
+	type args struct {
+		ip string
+	}
+	tests := []struct {
+		name     string
+		args     args
+		expected string
+	}{
+		{
+			name: "IPv4",
+			args: args{
+				ip: testIP.ipv4,
+			},
+			expected: jsonIPv4,
+		},
+		{
+			name: "IPv6",
+			args: args{
+				ip: testIP.ipv6,
+			},
+			expected: jsonIPv6,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req, _ := http.NewRequest("GET", "/json", nil)
+			req.RemoteAddr = net.JoinHostPort(tt.args.ip, "1000")
+			req.Host = "test"
+			req.Header.Set(trustedHeader, tt.args.ip)
 
-	req, _ := http.NewRequest("GET", "/json", nil)
-	req.RemoteAddr = net.JoinHostPort(testIP.ipv4, "1000")
-	req.Host = "test"
-	req.Header.Set("X-Real-IP", testIP.ipv4)
+			w := httptest.NewRecorder()
+			app.ServeHTTP(w, req)
 
-	w := httptest.NewRecorder()
-	app.ServeHTTP(w, req)
-
-	assert.Equal(t, 200, w.Code)
-	assert.Equal(t, contentType.json, w.Header().Get("Content-Type"))
-	assert.JSONEq(t, expectedIPv4, w.Body.String())
-
-	req.RemoteAddr = net.JoinHostPort(testIP.ipv6, "1000")
-	req.Host = "test"
-	req.Header.Set("X-Real-IP", testIP.ipv6)
-
-	w = httptest.NewRecorder()
-	app.ServeHTTP(w, req)
-
-	assert.Equal(t, 200, w.Code)
-	assert.Equal(t, contentType.json, w.Header().Get("Content-Type"))
-	assert.JSONEq(t, expectedIPv6, w.Body.String())
+			assert.Equal(t, 200, w.Code)
+			assert.Equal(t, contentType.json, w.Header().Get("Content-Type"))
+			assert.JSONEq(t, tt.expected, w.Body.String())
+		})
+	}
 }
 
 func TestAll(t *testing.T) {
@@ -120,7 +182,7 @@ X-Real-Ip: 81.2.69.192
 	req, _ := http.NewRequest("GET", "/all", nil)
 	req.RemoteAddr = net.JoinHostPort(testIP.ipv4, "1000")
 	req.Host = "test"
-	req.Header.Set("X-Real-IP", testIP.ipv4)
+	req.Header.Set(trustedHeader, testIP.ipv4)
 	req.Header.Set("Header1", "one")
 
 	w := httptest.NewRecorder()

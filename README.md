@@ -47,7 +47,7 @@ curl -6 ifconfig.es
 ## Endpoints
 
 - https://ifconfig.es/
-- https://ifconfig.es/json
+- https://ifconfig.es/json (this is the same as `curl -H "Accept: application/json" https://ifconfig.es/`)
 - https://ifconfig.es/geo
   - https://ifconfig.es/geo/city
   - https://ifconfig.es/geo/country
