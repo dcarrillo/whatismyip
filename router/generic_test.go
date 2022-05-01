@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/dcarrillo/whatismyip/internal/setting"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -97,16 +98,78 @@ func TestHost(t *testing.T) {
 }
 
 func TestClientPort(t *testing.T) {
-	req, _ := http.NewRequest("GET", "/client-port", nil)
-	req.RemoteAddr = net.JoinHostPort(testIP.ipv4, "1000")
-	req.Header.Set(trustedHeader, testIP.ipv4)
+	type args struct {
+		params  []string
+		headers map[string][]string
+	}
+	type expected struct {
+		body string
+	}
+	tests := []struct {
+		name     string
+		args     args
+		expected string
+	}{
+		{
+			name:     "No trusted headers set",
+			expected: "1000\n",
+		},
+		{
+			name: "Trusted header only set",
+			args: args{
+				params: []string{
+					"-geoip2-city", "city",
+					"-geoip2-asn", "asn",
+					"-trusted-header", trustedHeader,
+				},
+			},
+			expected: "unknown\n",
+		},
+		{
+			name: "Trusted and port header set but not included in headers",
+			args: args{
+				params: []string{
+					"-geoip2-city", "city",
+					"-geoip2-asn", "asn",
+					"-trusted-header", trustedHeader,
+					"-trusted-port-header", trustedPortHeader,
+				},
+			},
+			expected: "unknown\n",
+		},
+		{
+			name: "Trusted and port header set and included in headers",
+			args: args{
+				params: []string{
+					"-geoip2-city", "city",
+					"-geoip2-asn", "asn",
+					"-trusted-header", trustedHeader,
+					"-trusted-port-header", trustedPortHeader,
+				},
+				headers: map[string][]string{
+					trustedHeader:     {testIP.ipv4},
+					trustedPortHeader: {"1001"},
+				},
+			},
+			expected: "1001\n",
+		},
+	}
 
-	w := httptest.NewRecorder()
-	app.ServeHTTP(w, req)
+	for _, tt := range tests {
+		_, _ = setting.Setup(tt.args.params)
+		t.Run(tt.name, func(t *testing.T) {
+			req, _ := http.NewRequest("GET", "/client-port", nil)
+			req.RemoteAddr = net.JoinHostPort(testIP.ipv4, "1000")
+			req.Header = tt.args.headers
 
-	assert.Equal(t, 200, w.Code)
-	assert.Equal(t, contentType.text, w.Header().Get("Content-Type"))
-	assert.Equal(t, "1000\n", w.Body.String())
+			w := httptest.NewRecorder()
+			app.ServeHTTP(w, req)
+
+			assert.Equal(t, 200, w.Code)
+			assert.Equal(t, contentType.text, w.Header().Get("Content-Type"))
+			assert.Equal(t, tt.expected, w.Body.String())
+		})
+	}
 }
 
 func TestNotFound(t *testing.T) {
@@ -120,6 +183,15 @@ func TestNotFound(t *testing.T) {
 }
 
 func TestJSON(t *testing.T) {
+	_, _ = setting.Setup(
+		[]string{
+			"-geoip2-city", "city",
+			"-geoip2-asn", "asn",
+			"-trusted-header", trustedHeader,
+			"-trusted-port-header", trustedPortHeader,
+		},
+	)
+
 	type args struct {
 		ip string
 	}
@@ -149,6 +221,7 @@ func TestJSON(t *testing.T) {
 			req.RemoteAddr = net.JoinHostPort(tt.args.ip, "1000")
 			req.Host = "test"
 			req.Header.Set(trustedHeader, tt.args.ip)
+			req.Header.Set(trustedPortHeader, "1001")
 
 			w := httptest.NewRecorder()
 			app.ServeHTTP(w, req)
@@ -162,7 +235,7 @@ func TestJSON(t *testing.T) {
 
 func TestAll(t *testing.T) {
 	expected := `IP: 81.2.69.192
-Client Port: 1000
+Client Port: 1001
 City: London
 Country: United Kingdom
 Country Code: GB
@@ -177,12 +250,22 @@ ASN Organization:
 Header1: one
 Host: test
 X-Real-Ip: 81.2.69.192
+X-Real-Port: 1001
 `
+	_, _ = setting.Setup(
+		[]string{
+			"-geoip2-city", "city",
+			"-geoip2-asn", "asn",
+			"-trusted-header", trustedHeader,
+			"-trusted-port-header", trustedPortHeader,
+		},
+	)
 
 	req, _ := http.NewRequest("GET", "/all", nil)
 	req.RemoteAddr = net.JoinHostPort(testIP.ipv4, "1000")
 	req.Host = "test"
 	req.Header.Set(trustedHeader, testIP.ipv4)
+	req.Header.Set(trustedPortHeader, "1001")
 	req.Header.Set("Header1", "one")
 
 	w := httptest.NewRecorder()

@@ -13,7 +13,7 @@
   - [Examples](#examples)
     - [Run a default TCP server](#run-a-default-tcp-server)
     - [Run a TLS (HTTP/2) server only](#run-a-tls-http2-server-only)
-    - [Run a default TCP server with a custom template and trust a custom header set by an upstream proxy](#run-a-default-tcp-server-with-a-custom-template-and-trust-a-custom-header-set-by-an-upstream-proxy)
+    - [Run a default TCP server with a custom template and trust a pair of custom headers set by an upstream proxy](#run-a-default-tcp-server-with-a-custom-template-and-trust-a-pair-of-custom-headers-set-by-an-upstream-proxy)
   - [Download](#download)
   - [Docker](#docker)
     - [Run a container locally using test databases](#run-a-container-locally-using-test-databases)
@@ -36,7 +36,7 @@ curl -6 ifconfig.es
 ## Features
 
 - TLS and HTTP/2.
-- Can run behind a proxy by trusting a custom header (usually `X-Real-IP`) to figure out the source IP address.
+- Can run behind a proxy by trusting a custom header (usually `X-Real-IP`) to figure out the source IP address. It also supports a custom header to resolve the client port, if the proxy can only add a header for the IP (for example a fixed header from CDNs) the client port is shown as unknown.
 - IPv4 and IPv6.
 - Geolocation info including ASN. This feature is possible thanks to [maxmind](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data?lang=en) GeoLite2 databases. In order to use these databases, a license key is needed. Please visit Maxmind site for further instructions and get a free license.
 - High performance.
@@ -47,6 +47,7 @@ curl -6 ifconfig.es
 ## Endpoints
 
 - https://ifconfig.es/
+- https://ifconfig.es/client-port
 - https://ifconfig.es/json (this is the same as `curl -H "Accept: application/json" https://ifconfig.es/`)
 - https://ifconfig.es/geo
   - https://ifconfig.es/geo/city
@@ -72,9 +73,11 @@ Golang >= 1.17 is required. Previous versions may work.
 ## Usage
 
 ```text
-Usage of ./whatismyip:
+Usage of whatismyip:
   -bind string
         Listening address (see https://pkg.go.dev/net?#Listen) (default ":8080")
+  -enable-secure-headers
+        Add sane security-related headers to every response
   -geoip2-asn string
         Path to GeoIP2 ASN database
   -geoip2-city string
@@ -88,7 +91,9 @@ Usage of ./whatismyip:
   -tls-key string
         When using TLS, path to private key file
   -trusted-header string
-        Trusted request header for remote IP (e.g. X-Real-IP)
+        Trusted request header for remote IP (e.g. X-Real-IP). When using this feature if -trusted-port-header is not set the client port is shown as 'unknown'
+  -trusted-port-header string
+        Trusted request header for remote client port (e.g. X-Real-Port). When this parameter is set -trusted-header becomes mandatory
   -version
         Output version information and exit
 ```
@@ -108,11 +113,11 @@ Usage of ./whatismyip:
              -bind "" -tls-bind :8081 -tls-crt ./test/server.pem -tls-key ./test/server.key
 ```
 
-### Run a default TCP server with a custom template and trust a custom header set by an upstream proxy
+### Run a default TCP server with a custom template and trust a pair of custom headers set by an upstream proxy
 
 ```bash
 ./whatismyip -geoip2-city ./test/GeoIP2-City-Test.mmdb -geoip2-asn ./test/GeoLite2-ASN-Test.mmdb \
-             -trusted-header X-Real-IP -template mytemplate.tmpl
+             -trusted-header X-Real-IP -trusted-port-header X-Real-Port -template mytemplate.tmpl
 ```
 
 ## Download
@@ -121,7 +126,7 @@ Download latest version from https://github.com/dcarrillo/whatismyip/releases
 
 ## Docker
 
-An ultra-light (~9MB) image is available.
+An ultra-light (~10MB) image is available at [docker hub](https://hub.docker.com/r/dcarrillo/whatismyip).
 
 ### Run a container locally using test databases
 

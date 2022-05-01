@@ -44,15 +44,31 @@ func getRoot(ctx *gin.Context) {
 	}
 }
 
+func getClientPort(ctx *gin.Context) string {
+	var port string
+	if setting.App.TrustedPortHeader == "" {
+		if setting.App.TrustedHeader != "" {
+			port = "unknown"
+		} else {
+			_, port, _ = net.SplitHostPort(ctx.Request.RemoteAddr)
+		}
+	} else {
+		port = ctx.GetHeader(setting.App.TrustedPortHeader)
+		if port == "" {
+			port = "unknown"
+		}
+	}
+
+	return port
+}
+
 func getClientPortAsString(ctx *gin.Context) {
-	_, port, _ := net.SplitHostPort(ctx.Request.RemoteAddr)
-	ctx.String(http.StatusOK, port+"\n")
+	ctx.String(http.StatusOK, getClientPort(ctx)+"\n")
 }
 
 func getAllAsString(ctx *gin.Context) {
 	output := "IP: " + ctx.ClientIP() + "\n"
-	_, port, _ := net.SplitHostPort(ctx.Request.RemoteAddr)
-	output += "Client Port: " + port + "\n"
+	output += "Client Port: " + getClientPort(ctx) + "\n"
 
 	r := service.Geo{IP: net.ParseIP(ctx.ClientIP())}
 	if record := r.LookUpCity(); record != nil {
@@ -83,11 +99,10 @@ func jsonOutput(ctx *gin.Context) JSONResponse {
 		version = 6
 	}
 
-	_, port, _ := net.SplitHostPort(ctx.Request.RemoteAddr)
 	return JSONResponse{
 		IP:              ctx.ClientIP(),
 		IPVersion:       version,
-		ClientPort:      port,
+		ClientPort:      getClientPort(ctx),
 		Country:         cityRecord.Country.Names["en"],
 		CountryCode:     cityRecord.Country.ISOCode,
 		City:            cityRecord.City.Names["en"],

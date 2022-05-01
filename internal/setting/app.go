@@ -27,6 +27,7 @@ type settings struct {
 	TLSCrtPath          string
 	TLSKeyPath          string
 	TrustedHeader       string
+	TrustedPortHeader   string
 	EnableSecureHeaders bool
 	Server              serverSettings
 	version             bool
@@ -74,6 +75,11 @@ func Setup(args []string) (output string, err error) {
 		"",
 		"Trusted request header for remote IP (e.g. X-Real-IP)",
 	)
+	flags.StringVar(&App.TrustedPortHeader,
+		"trusted-port-header",
+		"",
+		"Trusted request header for remote client port (e.g. X-Real-Port)",
+	)
 	flags.BoolVar(&App.version, "version", false, "Output version information and exit")
 	flags.BoolVar(
 		&App.EnableSecureHeaders,
@@ -91,21 +97,25 @@ func Setup(args []string) (output string, err error) {
 		return fmt.Sprintf("whatismyip version %s", core.Version), ErrVersion
 	}
 
+	if App.TrustedPortHeader != "" && App.TrustedHeader == "" {
+		return "", fmt.Errorf("truster-header is mandatory when truster-port-header is set\n")
+	}
+
 	if App.GeodbPath.City == "" || App.GeodbPath.ASN == "" {
-		return "", fmt.Errorf("geoip2-city and geoip2-asn parameters are mandatory")
+		return "", fmt.Errorf("geoip2-city and geoip2-asn parameters are mandatory\n")
 	}
 
 	if (App.TLSAddress != "") && (App.TLSCrtPath == "" || App.TLSKeyPath == "") {
-		return "", fmt.Errorf("In order to use TLS -tls-crt and -tls-key flags are mandatory")
+		return "", fmt.Errorf("In order to use TLS -tls-crt and -tls-key flags are mandatory\n")
 	}
 
 	if App.TemplatePath != "" {
 		info, err := os.Stat(App.TemplatePath)
 		if os.IsNotExist(err) {
-			return "", fmt.Errorf("%s no such file or directory", App.TemplatePath)
+			return "", fmt.Errorf("%s no such file or directory\n", App.TemplatePath)
 		}
 		if info.IsDir() {
-			return "", fmt.Errorf("%s must be a file", App.TemplatePath)
+			return "", fmt.Errorf("%s must be a file\n", App.TemplatePath)
 		}
 	}
 
