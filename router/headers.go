@@ -10,15 +10,17 @@ import (
 )
 
 func getHeadersAsSortedString(ctx *gin.Context) {
-	h := ctx.Request.Header
-	h["Host"] = []string{ctx.Request.Host}
+	h := httputils.GetHeadersWithoutTrustedHeaders(ctx)
+	h.Set("Host", ctx.Request.Host)
 
 	ctx.String(http.StatusOK, httputils.HeadersToSortedString(h))
 }
 
 func getHeaderAsString(ctx *gin.Context) {
+	headers := httputils.GetHeadersWithoutTrustedHeaders(ctx)
+
 	h := ctx.Params.ByName("header")
-	if v := ctx.GetHeader(h); v != "" {
+	if v := headers.Get(ctx.Params.ByName("header")); v != "" {
 		ctx.String(http.StatusOK, template.HTMLEscapeString(v))
 	} else if strings.ToLower(h) == "host" {
 		ctx.String(http.StatusOK, template.HTMLEscapeString(ctx.Request.Host))

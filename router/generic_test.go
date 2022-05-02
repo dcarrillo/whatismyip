@@ -102,9 +102,6 @@ func TestClientPort(t *testing.T) {
 		params  []string
 		headers map[string][]string
 	}
-	type expected struct {
-		body string
-	}
 	tests := []struct {
 		name     string
 		args     args
@@ -249,8 +246,6 @@ ASN Organization:
 
 Header1: one
 Host: test
-X-Real-Ip: 81.2.69.192
-X-Real-Port: 1001
 `
 	_, _ = setting.Setup(
 		[]string{

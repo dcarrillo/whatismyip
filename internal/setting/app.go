@@ -70,15 +70,17 @@ func Setup(args []string) (output string, err error) {
 	)
 	flags.StringVar(&App.TLSCrtPath, "tls-crt", "", "When using TLS, path to certificate file")
 	flags.StringVar(&App.TLSKeyPath, "tls-key", "", "When using TLS, path to private key file")
-	flags.StringVar(&App.TrustedHeader,
+	flags.StringVar(
+		&App.TrustedHeader,
 		"trusted-header",
 		"",
-		"Trusted request header for remote IP (e.g. X-Real-IP)",
+		"Trusted request header for remote IP (e.g. X-Real-IP). When using this feature if -trusted-port-header is not set the client port is shown as 'unknown'",
 	)
-	flags.StringVar(&App.TrustedPortHeader,
+	flags.StringVar(
+		&App.TrustedPortHeader,
 		"trusted-port-header",
 		"",
-		"Trusted request header for remote client port (e.g. X-Real-Port)",
+		"Trusted request header for remote client port (e.g. X-Real-Port). When this parameter is set -trusted-header becomes mandatory",
 	)
 	flags.BoolVar(&App.version, "version", false, "Output version information and exit")
 	flags.BoolVar(

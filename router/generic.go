@@ -79,8 +79,8 @@ func getAllAsString(ctx *gin.Context) {
 		output += geoASNRecordToString(record) + "\n"
 	}
 
-	h := ctx.Request.Header
-	h["Host"] = []string{ctx.Request.Host}
+	h := httputils.GetHeadersWithoutTrustedHeaders(ctx)
+	h.Set("Host", ctx.Request.Host)
 	output += httputils.HeadersToSortedString(h)
 
 	ctx.String(http.StatusOK, output)
@@ -113,6 +113,6 @@ func jsonOutput(ctx *gin.Context) JSONResponse {
 		ASN:             asnRecord.AutonomousSystemNumber,
 		ASNOrganization: asnRecord.AutonomousSystemOrganization,
 		Host:            ctx.Request.Host,
-		Headers:         ctx.Request.Header,
+		Headers:         httputils.GetHeadersWithoutTrustedHeaders(ctx),
 	}
 }

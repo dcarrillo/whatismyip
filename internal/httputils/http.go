@@ -3,9 +3,11 @@ package httputils
 import (
 	"fmt"
 	"net/http"
+	"net/textproto"
 	"sort"
 	"strings"
 
+	"github.com/dcarrillo/whatismyip/internal/setting"
 	"github.com/gin-gonic/gin"
 )
 
@@ -30,6 +32,17 @@ func HeadersToSortedString(headers http.Header) string {
 	}
 
 	return output
+}
+
+// GetHeadersWithoutTrustedHeaders return a http.Heade object with the original headers except trusted headers
+func GetHeadersWithoutTrustedHeaders(ctx *gin.Context) http.Header {
+	h := ctx.Request.Header
+
+	for _, k := range []string{setting.App.TrustedHeader, setting.App.TrustedPortHeader} {
+		delete(h, textproto.CanonicalMIMEHeaderKey(k))
+	}
+
+	return h
 }
 
 // GetLogFormatter returns our custom log format
