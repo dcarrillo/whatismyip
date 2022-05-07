@@ -38,12 +38,18 @@ func buildContainer() testcontainers.ContainerRequest {
 		},
 		ExposedPorts: []string{"8000:8000", "8001:8001"},
 		WaitingFor:   wait.ForLog("Starting TLS server listening on :8001"),
-		BindMounts: map[string]string{
-			"/tmp/GeoIP2-City-Test.mmdb":  filepath.Join(dir, "/../test/GeoIP2-City-Test.mmdb"),
-			"/tmp/GeoLite2-ASN-Test.mmdb": filepath.Join(dir, "/../test/GeoLite2-ASN-Test.mmdb"),
-			"/tmp/server.pem":             filepath.Join(dir, "/../test/server.pem"),
-			"/tmp/server.key":             filepath.Join(dir, "/../test/server.key"),
-		},
+		Mounts: testcontainers.Mounts(
+			testcontainers.BindMount(
+				filepath.Join(dir, "/../test/GeoIP2-City-Test.mmdb"),
+				"/tmp/GeoIP2-City-Test.mmdb",
+			),
+			testcontainers.BindMount(
+				filepath.Join(dir, "/../test/GeoLite2-ASN-Test.mmdb"),
+				"/tmp/GeoLite2-ASN-Test.mmdb",
+			),
+			testcontainers.BindMount(filepath.Join(dir, "/../test/server.pem"), "/tmp/server.pem"),
+			testcontainers.BindMount(filepath.Join(dir, "/../test/server.key"), "/tmp/server.key"),
+		),
 	}
 
 	return req
