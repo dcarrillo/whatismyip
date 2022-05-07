@@ -13,7 +13,7 @@ import (
 
 	"github.com/dcarrillo/whatismyip/internal/httputils"
 	"github.com/dcarrillo/whatismyip/internal/setting"
-	"github.com/gin-gonic/contrib/secure"
+	"github.com/gin-contrib/secure"
 
 	"github.com/dcarrillo/whatismyip/models"
 	"github.com/dcarrillo/whatismyip/router"
@@ -141,7 +141,7 @@ func setupEngine() {
 	engine.Use(gin.LoggerWithFormatter(httputils.GetLogFormatter))
 	engine.Use(gin.Recovery())
 	if setting.App.EnableSecureHeaders {
-		engine.Use(secure.Secure(secure.Options{
+		engine.Use(secure.New(secure.Config{
 			BrowserXssFilter:   true,
 			ContentTypeNosniff: true,
 			FrameDeny:          true,
