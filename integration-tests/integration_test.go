@@ -83,5 +83,8 @@ func TestContainerIntegration(t *testing.T) {
 		}
 
 		assert.NoError(t, json.Unmarshal(body, &router.JSONResponse{}))
+		assert.Equal(t, "DENY", resp.Header.Get("X-Frame-Options"))
+		assert.Equal(t, "nosniff", resp.Header.Get("X-Content-Type-Options"))
+		assert.Equal(t, "1; mode=block", resp.Header.Get("X-Xss-Protection"))
 	}
 }

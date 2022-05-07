@@ -13,11 +13,12 @@ import (
 
 	"github.com/dcarrillo/whatismyip/internal/httputils"
 	"github.com/dcarrillo/whatismyip/internal/setting"
+	"github.com/gin-gonic/contrib/secure"
+
 	"github.com/dcarrillo/whatismyip/models"
 	"github.com/dcarrillo/whatismyip/router"
 
 	"github.com/gin-gonic/gin"
-	"github.com/unrolled/secure"
 )
 
 var (
@@ -140,27 +141,12 @@ func setupEngine() {
 	engine.Use(gin.LoggerWithFormatter(httputils.GetLogFormatter))
 	engine.Use(gin.Recovery())
 	if setting.App.EnableSecureHeaders {
-		engine.Use(addSecureHeaders())
-	}
-	_ = engine.SetTrustedProxies(nil)
-	engine.TrustedPlatform = setting.App.TrustedHeader
-}
-
-func addSecureHeaders() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		err := secure.New(secure.Options{
+		engine.Use(secure.Secure(secure.Options{
 			BrowserXssFilter:   true,
 			ContentTypeNosniff: true,
 			FrameDeny:          true,
-		}).Process(c.Writer, c.Request)
-		if err != nil {
-			c.Abort()
-			return
-		}
-
-		// Avoid header rewrite if response is a redirection.
-		if status := c.Writer.Status(); status > 300 && status < 399 {
-			c.Abort()
-		}
+		}))
 	}
+	_ = engine.SetTrustedProxies(nil)
+	engine.TrustedPlatform = setting.App.TrustedHeader
 }

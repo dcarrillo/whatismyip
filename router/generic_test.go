@@ -165,6 +165,7 @@ func TestClientPort(t *testing.T) {
 			assert.Equal(t, 200, w.Code)
 			assert.Equal(t, contentType.text, w.Header().Get("Content-Type"))
 			assert.Equal(t, tt.expected, w.Body.String())
+			t.Log(w.Header())
 		})
 	}
 }
