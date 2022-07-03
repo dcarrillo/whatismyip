@@ -1,6 +1,7 @@
 # What is my IP address
 
 [![CI](https://github.com/dcarrillo/whatismyip/workflows/CI/badge.svg)](https://github.com/dcarrillo/whatismyip/actions)
+[![CodeQL](https://github.com/dcarrillo/whatismyip/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/dcarrillo/whatismyip/actions/workflows/codeql-analysis.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/dcarrillo/whatismyip)](https://goreportcard.com/report/github.com/dcarrillo/whatismyip)
 [![GitHub release](https://img.shields.io/github/release/dcarrillo/whatismyip.svg)](https://github.com/dcarrillo/whatismyip/releases/)
 [![License Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](./LICENSE)
