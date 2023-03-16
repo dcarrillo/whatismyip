@@ -100,24 +100,24 @@ func Setup(args []string) (output string, err error) {
 	}
 
 	if App.TrustedPortHeader != "" && App.TrustedHeader == "" {
-		return "", fmt.Errorf("truster-header is mandatory when truster-port-header is set\n")
+		return "", fmt.Errorf("truster-header is mandatory when truster-port-header is set")
 	}
 
 	if App.GeodbPath.City == "" || App.GeodbPath.ASN == "" {
-		return "", fmt.Errorf("geoip2-city and geoip2-asn parameters are mandatory\n")
+		return "", fmt.Errorf("geoip2-city and geoip2-asn parameters are mandatory")
 	}
 
 	if (App.TLSAddress != "") && (App.TLSCrtPath == "" || App.TLSKeyPath == "") {
-		return "", fmt.Errorf("In order to use TLS -tls-crt and -tls-key flags are mandatory\n")
+		return "", fmt.Errorf("in order to use TLS, the -tls-crt and -tls-key flags are mandatory")
 	}
 
 	if App.TemplatePath != "" {
 		info, err := os.Stat(App.TemplatePath)
 		if os.IsNotExist(err) {
-			return "", fmt.Errorf("%s no such file or directory\n", App.TemplatePath)
+			return "", fmt.Errorf("%s no such file or directory", App.TemplatePath)
 		}
 		if info.IsDir() {
-			return "", fmt.Errorf("%s must be a file\n", App.TemplatePath)
+			return "", fmt.Errorf("%s must be a file", App.TemplatePath)
 		}
 	}
 
