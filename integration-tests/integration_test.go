@@ -37,7 +37,7 @@ func buildContainer() testcontainers.ContainerRequest {
 			"-enable-secure-headers",
 		},
 		ExposedPorts: []string{"8000:8000", "8001:8001"},
-		WaitingFor:   wait.ForLog("Starting TLS server listening on :8001"),
+		WaitingFor:   wait.ForHTTP("/geo").WithTLS(true, &tls.Config{InsecureSkipVerify: true}).WithPort("8001"),
 		Mounts: testcontainers.Mounts(
 			testcontainers.BindMount(
 				filepath.Join(dir, "/../test/GeoIP2-City-Test.mmdb"),
