@@ -38,12 +38,12 @@ curl -6 ifconfig.es
 ## Features
 
 - TLS and HTTP/2.
-- Experimental support to HTTP/3. HTTP/3 requires a TLS server running (`-tls-bind`), as HTTP/3 starts as a TLS connection that then gets upgraded to UDP. The UDP port is the same as the one used for the TLS server.
+- Experimental HTTP/3 support. HTTP/3 requires a TLS server running (`-tls-bind`), as HTTP/3 starts as a TLS connection that then gets upgraded to UDP. The UDP port is the same as the one used for the TLS server.
 - Can run behind a proxy by trusting a custom header (usually `X-Real-IP`) to figure out the source IP address. It also supports a custom header to resolve the client port, if the proxy can only add a header for the IP (for example a fixed header from CDNs) the client port is shown as unknown.
 - IPv4 and IPv6.
 - Geolocation info including ASN. This feature is possible thanks to [maxmind](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data?lang=en) GeoLite2 databases. In order to use these databases, a license key is needed. Please visit Maxmind site for further instructions and get a free license.
 - High performance.
-- Self-contained server what can reload GeoLite2 databases and/or SSL certificates without stop/start. The `hup` signal is honored.
+- Self-contained server that can reload GeoLite2 databases and/or SSL certificates without stop/start. The `hup` signal is honored.
 - HTML templates for the landing page.
 - Text plain and JSON output.
 
@@ -134,7 +134,7 @@ Usage of whatismyip:
 
 ## Download
 
-Download latest version from https://github.com/dcarrillo/whatismyip/releases
+Download the latest version from https://github.com/dcarrillo/whatismyip/releases
 
 ## Docker
 
