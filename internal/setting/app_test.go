@@ -43,6 +43,11 @@ func TestParseMandatoryFlags(t *testing.T) {
 		},
 		{
 			[]string{
+				"-geoip2-city", "/city-path", "-geoip2-asn", "/asn-path", "-enable-http3",
+			},
+		},
+		{
+			[]string{
 				"-geoip2-city", "/city-path", "-geoip2-asn", "/asn-path", "-bind", ":8000",
 				"-trusted-port-header", "port-header",
 			},

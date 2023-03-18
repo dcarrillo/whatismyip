@@ -36,7 +36,12 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    # Initializes the CodeQL tools for scanning.
+    - name: install go
+      uses: actions/setup-go@v3
+      with:
+        go-version-file: go.mod
+        cache: true
+
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v2
       with:

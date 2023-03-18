@@ -17,13 +17,14 @@ import (
 
 	"github.com/dcarrillo/whatismyip/models"
 	"github.com/dcarrillo/whatismyip/router"
-
 	"github.com/gin-gonic/gin"
+	http3 "github.com/quic-go/quic-go/http3"
 )
 
 var (
 	tcpServer *http.Server
 	tlsServer *http.Server
+	h3Server  *http3.Server
 	engine    *gin.Engine
 )
 
@@ -48,6 +49,9 @@ func main() {
 
 	if setting.App.TLSAddress != "" {
 		runTLSServer()
+		if setting.App.EnableHTTP3 {
+			runQuicServer()
+		}
 	}
 
 	runHandler()
@@ -74,10 +78,20 @@ func runHandler() {
 				runTCPServer()
 			}
 			if setting.App.TLSAddress != "" {
+				if setting.App.EnableHTTP3 {
+					if err := h3Server.Close(); err != nil {
+						log.Printf("QUIC server forced to shutdown")
+					}
+				}
+
 				if err := tlsServer.Shutdown(ctx); err != nil {
 					log.Printf("TLS server forced to shutdown: %s", err)
 				}
 				runTLSServer()
+
+				if setting.App.EnableHTTP3 {
+					runQuicServer()
+				}
 			}
 		} else {
 			log.Printf("Shutting down...")
@@ -87,6 +101,11 @@ func runHandler() {
 				}
 			}
 			if setting.App.TLSAddress != "" {
+				if setting.App.EnableHTTP3 {
+					if err := h3Server.Close(); err != nil {
+						log.Printf("QUIC server forced to shutdown: %s", err)
+					}
+				}
 				if err := tlsServer.Shutdown(ctx); err != nil {
 					log.Printf("TLS server forced to shutdown: %s", err)
 				}
@@ -129,6 +148,31 @@ func runTLSServer() {
 			log.Fatal(err)
 		}
 		log.Printf("Stopping TLS server...")
+	}()
+}
+
+func runQuicServer() {
+	h3Server = &http3.Server{
+		Addr:    setting.App.TLSAddress,
+		Handler: tlsServer.Handler,
+	}
+
+	previousHandler := tlsServer.Handler
+	tlsServer.Handler = http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		if err := h3Server.SetQuicHeaders(rw.Header()); err != nil {
+			log.Fatal(err)
+		}
+
+		previousHandler.ServeHTTP(rw, req)
+	})
+
+	go func() {
+		log.Printf("Starting QUIC server listening on %s (udp)", setting.App.TLSAddress)
+		if err := h3Server.ListenAndServeTLS(setting.App.TLSCrtPath, setting.App.TLSKeyPath); err != nil &&
+			err.Error() != "quic: Server closed" {
+			log.Fatal(err)
+		}
+		log.Printf("Stopping QUIC server...")
 	}()
 }
 

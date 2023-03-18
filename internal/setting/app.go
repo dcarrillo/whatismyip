@@ -29,6 +29,7 @@ type settings struct {
 	TrustedHeader       string
 	TrustedPortHeader   string
 	EnableSecureHeaders bool
+	EnableHTTP3         bool
 	Server              serverSettings
 	version             bool
 }
@@ -89,6 +90,12 @@ func Setup(args []string) (output string, err error) {
 		false,
 		"Add sane security-related headers to every response",
 	)
+	flags.BoolVar(
+		&App.EnableHTTP3,
+		"enable-http3",
+		false,
+		"Enable HTTP/3 protocol. HTTP/3 requires --tls-bind set, as HTTP/3 starts as a TLS connection that then gets upgraded to UDP. The UDP port is the same as the one used for the TLS server.",
+	)
 
 	err = flags.Parse(args)
 	if err != nil {
@@ -109,6 +116,10 @@ func Setup(args []string) (output string, err error) {
 
 	if (App.TLSAddress != "") && (App.TLSCrtPath == "" || App.TLSKeyPath == "") {
 		return "", fmt.Errorf("in order to use TLS, the -tls-crt and -tls-key flags are mandatory")
+	}
+
+	if App.EnableHTTP3 && App.TLSAddress == "" {
+		return "", fmt.Errorf("in order to use HTTP3, the -tls-bind is mandatory")
 	}
 
 	if App.TemplatePath != "" {
