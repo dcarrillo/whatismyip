@@ -9,9 +9,12 @@ import (
 	"net/http"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/dcarrillo/whatismyip/router"
+	"github.com/quic-go/quic-go"
+	"github.com/quic-go/quic-go/http3"
 	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -35,9 +38,12 @@ func buildContainer() testcontainers.ContainerRequest {
 			"-tls-key", "/tmp/server.key",
 			"-trusted-header", "X-Real-IP",
 			"-enable-secure-headers",
+			"-enable-http3",
 		},
-		ExposedPorts: []string{"8000:8000", "8001:8001"},
-		WaitingFor:   wait.ForLog("Starting TLS server listening on :8001"),
+		ExposedPorts: []string{"8000:8000", "8001:8001", "8001:8001/udp"},
+		WaitingFor: wait.ForHTTP("/geo").
+			WithTLS(true, &tls.Config{InsecureSkipVerify: true}).
+			WithPort("8001"),
 		Mounts: testcontainers.Mounts(
 			testcontainers.BindMount(
 				filepath.Join(dir, "/../test/GeoIP2-City-Test.mmdb"),
@@ -69,28 +75,86 @@ func TestContainerIntegration(t *testing.T) {
 		log.Fatal(err)
 	}
 	defer func() {
-		err := container.Terminate(ctx)
+		err = container.Terminate(ctx)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}()
 
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	for _, url := range []string{"http://localhost:8000", "https://localhost:8001"} {
-		client := &http.Client{}
-		req, _ := http.NewRequest("GET", url, nil)
-		req.Header.Set("Accept", "application/json")
-		resp, _ := client.Do(req)
-		assert.Equal(t, 200, resp.StatusCode)
 
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		assert.NoError(t, json.Unmarshal(body, &router.JSONResponse{}))
-		assert.Equal(t, "DENY", resp.Header.Get("X-Frame-Options"))
-		assert.Equal(t, "nosniff", resp.Header.Get("X-Content-Type-Options"))
-		assert.Equal(t, "1; mode=block", resp.Header.Get("X-Xss-Protection"))
+	tests := []struct {
+		name string
+		url  string
+		quic bool
+	}{
+		{
+			name: "RequestOverHTTP",
+			url:  "http://localhost:8000",
+			quic: false,
+		},
+		{
+			name: "RequestOverHTTPs",
+			url:  "https://localhost:8001",
+			quic: false,
+		},
+		{
+			name: "RequestOverUDPWithQuic",
+			url:  "https://localhost:8001",
+			quic: true,
+		},
 	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req, _ := http.NewRequest("GET", tt.url, nil)
+			req.Header.Set("Accept", "application/json")
+
+			var resp *http.Response
+			var body []byte
+			if tt.quic {
+				resp, body, err = doQuicRequest(req)
+			} else {
+				client := &http.Client{}
+				resp, _ = client.Do(req)
+				body, err = io.ReadAll(resp.Body)
+				if strings.Contains(tt.url, "https://") {
+					assert.Equal(t, `h3=":8001"; ma=2592000,h3-29=":8001"; ma=2592000`, resp.Header.Get("Alt-Svc"))
+				}
+			}
+			assert.NoError(t, err)
+
+			assert.NoError(t, err)
+			assert.Equal(t, 200, resp.StatusCode)
+
+			assert.NoError(t, json.Unmarshal(body, &router.JSONResponse{}))
+			assert.Equal(t, "DENY", resp.Header.Get("X-Frame-Options"))
+			assert.Equal(t, "nosniff", resp.Header.Get("X-Content-Type-Options"))
+			assert.Equal(t, "1; mode=block", resp.Header.Get("X-Xss-Protection"))
+		})
+	}
+}
+
+func doQuicRequest(req *http.Request) (*http.Response, []byte, error) {
+	roundTripper := &http3.RoundTripper{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+		QuicConfig: &quic.Config{},
+	}
+	defer roundTripper.Close()
+
+	client := &http.Client{
+		Transport: roundTripper,
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+
+	return resp, body, nil
 }
