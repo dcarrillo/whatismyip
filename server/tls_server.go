@@ -37,10 +37,10 @@ func (t *TLSServer) Start() {
 			log.Fatal(err)
 		}
 	}()
-	log.Printf("Stopping TLS server...")
 }
 
 func (t *TLSServer) Stop() {
+	log.Printf("Stopping TLS server...")
 	if err := t.server.Shutdown(t.ctx); err != nil {
 		log.Printf("TLS server forced to shutdown: %s", err)
 	}

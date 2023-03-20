@@ -44,10 +44,10 @@ func (q *QuicServer) Start() {
 			log.Fatal(err)
 		}
 	}()
-	log.Printf("Stopping QUIC server...")
 }
 
 func (q *QuicServer) Stop() {
+	log.Printf("Stopping QUIC server...")
 	if err := q.server.Close(); err != nil {
 		log.Printf("QUIC server forced to shutdown")
 	}
