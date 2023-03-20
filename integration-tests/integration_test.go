@@ -123,8 +123,6 @@ func TestContainerIntegration(t *testing.T) {
 				}
 			}
 			assert.NoError(t, err)
-
-			assert.NoError(t, err)
 			assert.Equal(t, 200, resp.StatusCode)
 
 			assert.NoError(t, json.Unmarshal(body, &router.JSONResponse{}))
