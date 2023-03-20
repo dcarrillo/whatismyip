@@ -15,8 +15,8 @@ type TCPServer struct {
 	ctx     context.Context
 }
 
-func NewTCPServer(ctx context.Context, handler *http.Handler) TCPServer {
-	return TCPServer{
+func NewTCPServer(ctx context.Context, handler *http.Handler) *TCPServer {
+	return &TCPServer{
 		handler: handler,
 		ctx:     ctx,
 	}

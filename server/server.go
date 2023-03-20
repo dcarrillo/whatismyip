@@ -24,9 +24,9 @@ type Factory struct {
 }
 
 func Setup(ctx context.Context, handler http.Handler) *Factory {
-	var tcpServer TCPServer
-	var tlsServer TLSServer
-	var quicServer QuicServer
+	var tcpServer *TCPServer
+	var tlsServer *TLSServer
+	var quicServer *QuicServer
 
 	if setting.App.BindAddress != "" {
 		tcpServer = NewTCPServer(ctx, &handler)
@@ -35,14 +35,14 @@ func Setup(ctx context.Context, handler http.Handler) *Factory {
 	if setting.App.TLSAddress != "" {
 		tlsServer = NewTLSServer(ctx, &handler)
 		if setting.App.EnableHTTP3 {
-			quicServer = NewQuicServer(ctx, &tlsServer)
+			quicServer = NewQuicServer(ctx, tlsServer)
 		}
 	}
 
 	return &Factory{
-		tcpServer:  &tcpServer,
-		tlsServer:  &tlsServer,
-		quicServer: &quicServer,
+		tcpServer:  tcpServer,
+		tlsServer:  tlsServer,
+		quicServer: quicServer,
 	}
 }
 

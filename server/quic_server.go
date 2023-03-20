@@ -15,8 +15,8 @@ type QuicServer struct {
 	ctx       context.Context
 }
 
-func NewQuicServer(ctx context.Context, tlsServer *TLSServer) QuicServer {
-	return QuicServer{
+func NewQuicServer(ctx context.Context, tlsServer *TLSServer) *QuicServer {
+	return &QuicServer{
 		tlsServer: tlsServer,
 		ctx:       ctx,
 	}

@@ -15,8 +15,8 @@ type TLSServer struct {
 	ctx     context.Context
 }
 
-func NewTLSServer(ctx context.Context, handler *http.Handler) TLSServer {
-	return TLSServer{
+func NewTLSServer(ctx context.Context, handler *http.Handler) *TLSServer {
+	return &TLSServer{
 		handler: handler,
 		ctx:     ctx,
 	}
