@@ -46,56 +46,51 @@ func Setup(ctx context.Context, handler http.Handler) *Factory {
 	}
 }
 
-func (w *Factory) Run() {
-	w.start()
-	log.Printf("Starting server handler...")
-	w.Watcher()
-}
+func (f *Factory) Run() {
+	f.start()
 
-func (w *Factory) Watcher() {
 	signalChan := make(chan os.Signal, 3)
 	signal.Notify(signalChan, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM)
 	var s os.Signal
-
 	for {
 		s = <-signalChan
 
 		if s == syscall.SIGHUP {
-			w.stop()
+			f.stop()
 			models.CloseDBs()
 			models.Setup(setting.App.GeodbPath.City, setting.App.GeodbPath.ASN)
-			w.start()
+			f.start()
 		} else {
 			log.Printf("Shutting down...")
-			w.stop()
+			f.stop()
 			models.CloseDBs()
 			break
 		}
 	}
 }
 
-func (w *Factory) start() {
-	if w.tcpServer != nil {
-		w.tcpServer.Start()
+func (f *Factory) start() {
+	if f.tcpServer != nil {
+		f.tcpServer.Start()
 	}
 
-	if w.tlsServer != nil {
-		w.tlsServer.Start()
-		if w.quicServer != nil {
-			w.quicServer.Start()
+	if f.tlsServer != nil {
+		f.tlsServer.Start()
+		if f.quicServer != nil {
+			f.quicServer.Start()
 		}
 	}
 }
 
-func (w *Factory) stop() {
-	if w.tcpServer != nil {
-		w.tcpServer.Stop()
+func (f *Factory) stop() {
+	if f.tcpServer != nil {
+		f.tcpServer.Stop()
 	}
 
-	if w.tlsServer != nil {
-		if w.quicServer != nil {
-			w.quicServer.Stop()
+	if f.tlsServer != nil {
+		if f.quicServer != nil {
+			f.quicServer.Stop()
 		}
-		w.tlsServer.Stop()
+		f.tlsServer.Stop()
 	}
 }
