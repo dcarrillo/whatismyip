@@ -7,7 +7,8 @@ WORKDIR /app
 
 COPY . .
 
-RUN apk add make git && make build VERSION=$VERSION
+RUN apk add make git upx && make build VERSION=$VERSION \
+    && upx --best --lzma whatismyip
 
 # Build final image
 FROM scratch
