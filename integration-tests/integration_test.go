@@ -119,7 +119,7 @@ func TestContainerIntegration(t *testing.T) {
 				resp, _ = client.Do(req)
 				body, err = io.ReadAll(resp.Body)
 				if strings.Contains(tt.url, "https://") {
-					assert.Equal(t, `h3=":8001"; ma=2592000,h3-29=":8001"; ma=2592000`, resp.Header.Get("Alt-Svc"))
+					assert.Equal(t, `h3=":8001"; ma=2592000`, resp.Header.Get("Alt-Svc"))
 				}
 			}
 			assert.NoError(t, err)
