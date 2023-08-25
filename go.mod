@@ -1,6 +1,6 @@
 module github.com/dcarrillo/whatismyip
 
-go 1.20
+go 1.21
 
 require (
 	github.com/gin-contrib/secure v0.0.1
