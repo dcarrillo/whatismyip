@@ -4,8 +4,8 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"path/filepath"
 	"runtime"
@@ -30,12 +30,12 @@ func buildContainer() testcontainers.ContainerRequest {
 			Dockerfile: "Dockerfile",
 		},
 		Cmd: []string{
-			"-geoip2-city", "/tmp/GeoIP2-City-Test.mmdb",
-			"-geoip2-asn", "/tmp/GeoLite2-ASN-Test.mmdb",
+			"-geoip2-city", "/GeoIP2-City-Test.mmdb",
+			"-geoip2-asn", "/GeoLite2-ASN-Test.mmdb",
 			"-bind", ":8000",
 			"-tls-bind", ":8001",
-			"-tls-crt", "/tmp/server.pem",
-			"-tls-key", "/tmp/server.key",
+			"-tls-crt", "/server.pem",
+			"-tls-key", "/server.key",
 			"-trusted-header", "X-Real-IP",
 			"-enable-secure-headers",
 			"-enable-http3",
@@ -44,21 +44,45 @@ func buildContainer() testcontainers.ContainerRequest {
 		WaitingFor: wait.ForHTTP("/geo").
 			WithTLS(true, &tls.Config{InsecureSkipVerify: true}).
 			WithPort("8001"),
-		Mounts: testcontainers.Mounts(
-			testcontainers.BindMount(
-				filepath.Join(dir, "/../test/GeoIP2-City-Test.mmdb"),
-				"/tmp/GeoIP2-City-Test.mmdb",
-			),
-			testcontainers.BindMount(
-				filepath.Join(dir, "/../test/GeoLite2-ASN-Test.mmdb"),
-				"/tmp/GeoLite2-ASN-Test.mmdb",
-			),
-			testcontainers.BindMount(filepath.Join(dir, "/../test/server.pem"), "/tmp/server.pem"),
-			testcontainers.BindMount(filepath.Join(dir, "/../test/server.key"), "/tmp/server.key"),
-		),
+		Files: []testcontainers.ContainerFile{
+			{
+				HostFilePath:      filepath.Join(dir, "/../test/GeoIP2-City-Test.mmdb"),
+				ContainerFilePath: "/GeoIP2-City-Test.mmdb",
+				FileMode:          0644,
+			},
+			{
+				HostFilePath:      filepath.Join(dir, "/../test/GeoLite2-ASN-Test.mmdb"),
+				ContainerFilePath: "/GeoLite2-ASN-Test.mmdb",
+				FileMode:          0644,
+			},
+			{
+				HostFilePath:      filepath.Join(dir, "/../test/server.pem"),
+				ContainerFilePath: "/server.pem",
+				FileMode:          0644,
+			},
+			{
+				HostFilePath:      filepath.Join(dir, "/../test/server.key"),
+				ContainerFilePath: "/server.key",
+				FileMode:          0644,
+			},
+		},
 	}
 
 	return req
+}
+
+func initContainer(t assert.TestingT, request testcontainers.ContainerRequest) func() {
+	ctx := context.Background()
+
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: request,
+		Started:          true,
+	})
+	assert.NoError(t, err)
+
+	return func() {
+		assert.NoError(t, container.Terminate(ctx))
+	}
 }
 
 func TestContainerIntegration(t *testing.T) {
@@ -66,23 +90,9 @@ func TestContainerIntegration(t *testing.T) {
 		t.Skip("Skiping integration tests")
 	}
 
-	ctx := context.Background()
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: buildContainer(),
-		Started:          true,
-	})
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer func() {
-		err = container.Terminate(ctx)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}()
+	t.Cleanup(initContainer(t, buildContainer()))
 
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-
 	tests := []struct {
 		name string
 		url  string
@@ -105,9 +115,27 @@ func TestContainerIntegration(t *testing.T) {
 		},
 	}
 
+	testsPortScan := []struct {
+		name string
+		port int
+		want bool
+	}{
+		{
+			name: "RequestOpenPortScan",
+			port: 8000,
+			want: true,
+		},
+		{
+			name: "RequestClosedPortScan",
+			port: 65533,
+			want: false,
+		},
+	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req, _ := http.NewRequest("GET", tt.url, nil)
+			req, err := http.NewRequest("GET", tt.url, nil)
+			assert.NoError(t, err)
 			req.Header.Set("Accept", "application/json")
 
 			var resp *http.Response
@@ -130,6 +158,27 @@ func TestContainerIntegration(t *testing.T) {
 			assert.Equal(t, "nosniff", resp.Header.Get("X-Content-Type-Options"))
 			assert.Equal(t, "1; mode=block", resp.Header.Get("X-Xss-Protection"))
 		})
+	}
+
+	for _, tt := range testsPortScan {
+		t.Run(tt.name, func(t *testing.T) {
+			req, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:8000/scan/tcp/%d", tt.port), nil)
+			assert.NoError(t, err)
+			req.Header.Set("Accept", "application/json")
+			req.Header.Set("X-Real-IP", "127.0.0.1")
+
+			client := &http.Client{}
+			resp, err := client.Do(req)
+			assert.NoError(t, err)
+			assert.Equal(t, 200, resp.StatusCode)
+
+			body, err := io.ReadAll(resp.Body)
+			assert.NoError(t, err)
+			j := router.JSONScanResponse{}
+			assert.NoError(t, json.Unmarshal(body, &j))
+			assert.Equal(t, tt.want, j.Reachable)
+		})
+
 	}
 }
 

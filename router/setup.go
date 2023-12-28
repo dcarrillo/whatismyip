@@ -22,6 +22,7 @@ func SetupTemplate(r *gin.Engine) {
 // Setup defines the endpoints
 func Setup(r *gin.Engine) {
 	r.GET("/", getRoot)
+	r.GET("/scan/tcp/:port", scanTCPPort)
 	r.GET("/client-port", getClientPortAsString)
 	r.GET("/geo", getGeoAsString)
 	r.GET("/geo/:field", getGeoAsString)
