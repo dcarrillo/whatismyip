@@ -61,7 +61,7 @@ jobs:
           sha256sum whatismyip-$RELEASE_VERSION-${{matrix.goosarch}}.tar.gz > whatismyip-$RELEASE_VERSION-${{matrix.goosarch}}.tar.gz.sha256
 
       - name: Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           body_path: changelog.txt
           files: |
