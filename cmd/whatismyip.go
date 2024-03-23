@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/dcarrillo/whatismyip/internal/httputils"
@@ -30,8 +31,9 @@ func main() {
 	engine := setupEngine()
 	router.SetupTemplate(engine)
 	router.Setup(engine)
+	servers := setupHTTPServers(context.Background(), engine.Handler())
 
-	whatismyip := server.Setup(context.Background(), engine.Handler())
+	whatismyip := server.Setup(servers)
 	whatismyip.Run()
 }
 
@@ -54,4 +56,24 @@ func setupEngine() *gin.Engine {
 	engine.TrustedPlatform = setting.App.TrustedHeader
 
 	return engine
+}
+
+func setupHTTPServers(ctx context.Context, handler http.Handler) []server.Server {
+	var servers []server.Server
+
+	if setting.App.BindAddress != "" {
+		tcpServer := server.NewTCPServer(ctx, &handler)
+		servers = append(servers, tcpServer)
+	}
+
+	if setting.App.TLSAddress != "" {
+		tlsServer := server.NewTLSServer(ctx, &handler)
+		servers = append(servers, tlsServer)
+		if setting.App.EnableHTTP3 {
+			quicServer := server.NewQuicServer(ctx, tlsServer)
+			servers = append(servers, quicServer)
+		}
+	}
+
+	return servers
 }

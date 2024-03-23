@@ -9,20 +9,20 @@ import (
 	"github.com/dcarrillo/whatismyip/internal/setting"
 )
 
-type TCPServer struct {
+type TCP struct {
 	server  *http.Server
 	handler *http.Handler
 	ctx     context.Context
 }
 
-func NewTCPServer(ctx context.Context, handler *http.Handler) *TCPServer {
-	return &TCPServer{
+func NewTCPServer(ctx context.Context, handler *http.Handler) *TCP {
+	return &TCP{
 		handler: handler,
 		ctx:     ctx,
 	}
 }
 
-func (t *TCPServer) Start() {
+func (t *TCP) Start() {
 	t.server = &http.Server{
 		Addr:         setting.App.BindAddress,
 		Handler:      *t.handler,
@@ -38,7 +38,7 @@ func (t *TCPServer) Start() {
 	}()
 }
 
-func (t *TCPServer) Stop() {
+func (t *TCP) Stop() {
 	log.Printf("Stopping TCP server...")
 	if err := t.server.Shutdown(t.ctx); err != nil {
 		log.Printf("TCP server forced to shutdown: %s", err)
