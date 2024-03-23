@@ -63,7 +63,7 @@ func GetLogFormatter(param gin.LogFormatterParams) string {
 	)
 }
 
-func normalizeLog(log interface{}) interface{} {
+func normalizeLog(log any) any {
 	switch v := log.(type) {
 	case string:
 		if v == "" {

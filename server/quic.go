@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net/http"
 
@@ -9,20 +10,20 @@ import (
 	"github.com/quic-go/quic-go/http3"
 )
 
-type QuicServer struct {
+type Quic struct {
 	server    *http3.Server
-	tlsServer *TLSServer
+	tlsServer *TLS
 	ctx       context.Context
 }
 
-func NewQuicServer(ctx context.Context, tlsServer *TLSServer) *QuicServer {
-	return &QuicServer{
+func NewQuicServer(ctx context.Context, tlsServer *TLS) *Quic {
+	return &Quic{
 		tlsServer: tlsServer,
 		ctx:       ctx,
 	}
 }
 
-func (q *QuicServer) Start() {
+func (q *Quic) Start() {
 	q.server = &http3.Server{
 		Addr:    setting.App.TLSAddress,
 		Handler: q.tlsServer.server.Handler,
@@ -40,13 +41,13 @@ func (q *QuicServer) Start() {
 	log.Printf("Starting QUIC server listening on %s (udp)", setting.App.TLSAddress)
 	go func() {
 		if err := q.server.ListenAndServeTLS(setting.App.TLSCrtPath, setting.App.TLSKeyPath); err != nil &&
-			err.Error() != "quic: Server closed" {
+			!errors.Is(err, http.ErrServerClosed) {
 			log.Fatal(err)
 		}
 	}()
 }
 
-func (q *QuicServer) Stop() {
+func (q *Quic) Stop() {
 	log.Printf("Stopping QUIC server...")
 	if err := q.server.Close(); err != nil {
 		log.Printf("QUIC server forced to shutdown")

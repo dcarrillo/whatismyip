@@ -9,20 +9,20 @@ import (
 	"github.com/dcarrillo/whatismyip/internal/setting"
 )
 
-type TLSServer struct {
+type TLS struct {
 	server  *http.Server
 	handler *http.Handler
 	ctx     context.Context
 }
 
-func NewTLSServer(ctx context.Context, handler *http.Handler) *TLSServer {
-	return &TLSServer{
+func NewTLSServer(ctx context.Context, handler *http.Handler) *TLS {
+	return &TLS{
 		handler: handler,
 		ctx:     ctx,
 	}
 }
 
-func (t *TLSServer) Start() {
+func (t *TLS) Start() {
 	t.server = &http.Server{
 		Addr:         setting.App.TLSAddress,
 		Handler:      *t.handler,
@@ -39,7 +39,7 @@ func (t *TLSServer) Start() {
 	}()
 }
 
-func (t *TLSServer) Stop() {
+func (t *TLS) Stop() {
 	log.Printf("Stopping TLS server...")
 	if err := t.server.Shutdown(t.ctx); err != nil {
 		log.Printf("TLS server forced to shutdown: %s", err)
