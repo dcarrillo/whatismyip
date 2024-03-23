@@ -28,6 +28,7 @@ func Setup(servers []Server) *Manager {
 func (m *Manager) Run() {
 	m.start()
 
+	models.Setup(setting.App.GeodbPath.City, setting.App.GeodbPath.ASN)
 	signalChan := make(chan os.Signal, len(m.servers))
 	signal.Notify(signalChan, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM)
 	var s os.Signal

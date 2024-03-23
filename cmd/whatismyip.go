@@ -12,7 +12,6 @@ import (
 	"github.com/dcarrillo/whatismyip/server"
 	"github.com/gin-contrib/secure"
 
-	"github.com/dcarrillo/whatismyip/models"
 	"github.com/dcarrillo/whatismyip/router"
 	"github.com/gin-gonic/gin"
 )
@@ -27,7 +26,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	models.Setup(setting.App.GeodbPath.City, setting.App.GeodbPath.ASN)
 	engine := setupEngine()
 	router.SetupTemplate(engine)
 	router.Setup(engine)
