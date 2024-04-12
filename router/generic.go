@@ -11,7 +11,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// JSONResponse maps data as json
 type JSONResponse struct {
 	IP              string      `json:"ip"`
 	IPVersion       byte        `json:"ip_version"`
