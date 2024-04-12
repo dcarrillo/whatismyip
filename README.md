@@ -113,10 +113,9 @@ curl $(uuidgen).dns.ifconfig.es
 curl $(cat /proc/sys/kernel/random/uuid).dns.ifconfig.es
 ```
 
-
 ## Build
 
-Golang >= 1.19 is required.
+Golang >= 1.22 is required.
 
 `make build`
 
@@ -134,6 +133,8 @@ Usage of whatismyip:
         Path to GeoIP2 ASN database
   -geoip2-city string
         Path to GeoIP2 city database
+  -resolver string
+        Path to the resolver configuration. It actually enables the resolver for DNS client discover.
   -template string
         Path to template file
   -tls-bind string
