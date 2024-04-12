@@ -6,83 +6,73 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
-	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 
+	validator "github.com/dcarrillo/whatismyip/internal/validator/uuid"
 	"github.com/dcarrillo/whatismyip/router"
-	"github.com/quic-go/quic-go"
 	"github.com/quic-go/quic-go/http3"
 	"github.com/stretchr/testify/assert"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
+	"github.com/stretchr/testify/require"
+	tc "github.com/testcontainers/testcontainers-go/modules/compose"
 )
 
-func buildContainer() testcontainers.ContainerRequest {
-	_, filename, _, _ := runtime.Caller(0)
-	dir := filepath.Dir(filename)
+func customDialContext() func(ctx context.Context, network, addr string) (net.Conn, error) {
+	return func(ctx context.Context, network, addr string) (net.Conn, error) {
+		dialer := &net.Dialer{
+			Resolver: &net.Resolver{
+				PreferGo: true,
+				Dial: func(ctx context.Context, _, _ string) (net.Conn, error) {
+					d := net.Dialer{}
+					return d.DialContext(ctx, "udp", "127.0.0.1:53531")
+				},
+			},
+		}
 
-	req := testcontainers.ContainerRequest{
-		FromDockerfile: testcontainers.FromDockerfile{
-			Context:    "../",
-			Dockerfile: "Dockerfile",
-		},
-		Cmd: []string{
-			"-geoip2-city", "/GeoIP2-City-Test.mmdb",
-			"-geoip2-asn", "/GeoLite2-ASN-Test.mmdb",
-			"-bind", ":8000",
-			"-tls-bind", ":8001",
-			"-tls-crt", "/server.pem",
-			"-tls-key", "/server.key",
-			"-trusted-header", "X-Real-IP",
-			"-enable-secure-headers",
-			"-enable-http3",
-		},
-		ExposedPorts: []string{"8000:8000", "8001:8001", "8001:8001/udp"},
-		WaitingFor: wait.ForHTTP("/geo").
-			WithTLS(true, &tls.Config{InsecureSkipVerify: true}).
-			WithPort("8001"),
-		Files: []testcontainers.ContainerFile{
-			{
-				HostFilePath:      filepath.Join(dir, "/../test/GeoIP2-City-Test.mmdb"),
-				ContainerFilePath: "/GeoIP2-City-Test.mmdb",
-				FileMode:          0644,
-			},
-			{
-				HostFilePath:      filepath.Join(dir, "/../test/GeoLite2-ASN-Test.mmdb"),
-				ContainerFilePath: "/GeoLite2-ASN-Test.mmdb",
-				FileMode:          0644,
-			},
-			{
-				HostFilePath:      filepath.Join(dir, "/../test/server.pem"),
-				ContainerFilePath: "/server.pem",
-				FileMode:          0644,
-			},
-			{
-				HostFilePath:      filepath.Join(dir, "/../test/server.key"),
-				ContainerFilePath: "/server.key",
-				FileMode:          0644,
-			},
-		},
+		return dialer.DialContext(ctx, network, addr)
 	}
-
-	return req
 }
 
-func initContainer(t assert.TestingT, request testcontainers.ContainerRequest) func() {
-	ctx := context.Background()
+func testWhatIsMyDNS(t *testing.T) {
+	t.Run("RequestDNSDiscovery", func(t *testing.T) {
+		http.DefaultTransport.(*http.Transport).DialContext = customDialContext()
+		req, err := http.NewRequest("GET", "http://localhost:8000", nil)
+		assert.NoError(t, err)
+		req.Host = "dns.example.com"
+		client := &http.Client{
+			CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
+		}
 
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: request,
-		Started:          true,
+		resp, err := client.Do(req)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusFound, resp.StatusCode)
+		u, err := resp.Location()
+		assert.NoError(t, err)
+		assert.True(t, validator.IsValid(strings.Split(u.Hostname(), ".")[0]))
+
+		for _, accept := range []string{"application/json", "*/*", "text/html"} {
+			req, err = http.NewRequest("GET", u.String(), nil)
+			req.Host = u.Hostname()
+			req.Header.Set("Accept", accept)
+			assert.NoError(t, err)
+			resp, err = client.Do(req)
+			assert.NoError(t, err)
+			assert.Equal(t, http.StatusOK, resp.StatusCode)
+			body, err := io.ReadAll(resp.Body)
+			assert.NoError(t, err)
+
+			if accept == "application/json" {
+				assert.NoError(t, json.Unmarshal(body, &router.DNSJSONResponse{}))
+			} else {
+				ip := strings.Split(string(body), " ")[0]
+				assert.True(t, net.ParseIP(ip) != nil)
+			}
+		}
 	})
-	assert.NoError(t, err)
-
-	return func() {
-		assert.NoError(t, container.Terminate(ctx))
-	}
 }
 
 func TestContainerIntegration(t *testing.T) {
@@ -90,7 +80,15 @@ func TestContainerIntegration(t *testing.T) {
 		t.Skip("Skiping integration tests")
 	}
 
-	t.Cleanup(initContainer(t, buildContainer()))
+	compose, err := tc.NewDockerComposeWith(tc.WithStackFiles("../test/docker-compose.yml"), tc.StackIdentifier("whatismyip"))
+	require.NoError(t, err, "NewDockerComposeAPIWith()")
+
+	t.Cleanup(func() {
+		require.NoError(t, compose.Down(context.Background(), tc.RemoveOrphans(true), tc.RemoveImagesLocal), "compose.Down()")
+	})
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	require.NoError(t, compose.Up(ctx, tc.Wait(true)), "compose.Up()")
 
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	tests := []struct {
@@ -178,8 +176,9 @@ func TestContainerIntegration(t *testing.T) {
 			assert.NoError(t, json.Unmarshal(body, &j))
 			assert.Equal(t, tt.want, j.Reachable)
 		})
-
 	}
+
+	testWhatIsMyDNS(t)
 }
 
 func doQuicRequest(req *http.Request) (*http.Response, []byte, error) {
@@ -187,7 +186,6 @@ func doQuicRequest(req *http.Request) (*http.Response, []byte, error) {
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: true,
 		},
-		QuicConfig: &quic.Config{},
 	}
 	defer roundTripper.Close()
 

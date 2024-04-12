@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/dcarrillo/whatismyip/internal/core"
+	"gopkg.in/yaml.v3"
 )
 
 type geodbPath struct {
@@ -19,6 +20,15 @@ type serverSettings struct {
 	ReadTimeout  time.Duration
 	WriteTimeout time.Duration
 }
+
+type resolver struct {
+	Domain          string   `yaml:"domain"`
+	ResourceRecords []string `yaml:"resource_records"`
+	RedirectPort    string   `yaml:"redirect_port,omitempty"`
+	Ipv4            []string `yaml:"ipv4,omitempty"`
+	Ipv6            []string `yaml:"ipv6,omitempty"`
+}
+
 type settings struct {
 	GeodbPath           geodbPath
 	TemplatePath        string
@@ -31,15 +41,14 @@ type settings struct {
 	EnableSecureHeaders bool
 	EnableHTTP3         bool
 	Server              serverSettings
+	Resolver            resolver
 	version             bool
 }
 
 const defaultAddress = ":8080"
 
-// ErrVersion is the custom error triggered when -version flag is passed
 var ErrVersion = errors.New("setting: version requested")
 
-// App is the var with the parsed settings
 var App = settings{
 	// hard-coded for the time being
 	Server: serverSettings{
@@ -48,15 +57,20 @@ var App = settings{
 	},
 }
 
-// Setup initializes the App object parsing the flags
 func Setup(args []string) (output string, err error) {
 	flags := flag.NewFlagSet("whatismyip", flag.ContinueOnError)
 	var buf bytes.Buffer
+	var resolverConf string
 	flags.SetOutput(&buf)
 
 	flags.StringVar(&App.GeodbPath.City, "geoip2-city", "", "Path to GeoIP2 city database")
 	flags.StringVar(&App.GeodbPath.ASN, "geoip2-asn", "", "Path to GeoIP2 ASN database")
-	flags.StringVar(&App.TemplatePath, "template", "", "Path to template file")
+	flags.StringVar(&App.TemplatePath, "template", "", "Path to the template file")
+	flags.StringVar(
+		&resolverConf,
+		"resolver",
+		"",
+		"Path to the resolver configuration. It actually enables the resolver for DNS client discover.")
 	flags.StringVar(
 		&App.BindAddress,
 		"bind",
@@ -132,5 +146,21 @@ func Setup(args []string) (output string, err error) {
 		}
 	}
 
+	if resolverConf != "" {
+		var err error
+		App.Resolver, err = readYAML(resolverConf)
+		if err != nil {
+			return "", fmt.Errorf("error reading resolver configuration %s", err)
+		}
+	}
+
 	return buf.String(), nil
+}
+
+func readYAML(path string) (resolver resolver, err error) {
+	yamlFile, err := os.ReadFile(path)
+	if err != nil {
+		return resolver, err
+	}
+	return resolver, yaml.Unmarshal(yamlFile, &resolver)
 }

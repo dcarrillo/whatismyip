@@ -5,39 +5,40 @@ DOCKER_URL ?= dcarrillo/whatismyip
 .PHONY: test
 test: unit-test integration-test
 
-.PHONY: unit-test
 unit-test:
 	go test -count=1 -race -short -cover ./...
 
-.PHONY: integration-test
 integration-test:
 	go test -count=1 -v ./integration-tests
 
-.PHONY: install-tools
 install-tools:
 	@command golangci-lint > /dev/null 2>&1; if [ $$? -ne 0 ]; then \
 		curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOPATH)/bin; \
 	fi
 
+	@command $(GOPATH)/revive > /dev/null 2>&1; if [ $$? -ne 0 ]; then \
+		go get -u github.com/mgechev/revive; \
+	fi
+
 	@command $(GOPATH)/shadow > /dev/null 2>&1; if [ $$? -ne 0 ]; then \
 		go install golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow@latest; \
 	fi
-.PHONY: lint
+
 lint: install-tools
 	gofmt -l . && test -z $$(gofmt -l .)
 	golangci-lint run
 	shadow ./...
 
-.PHONY: build
 build:
 	CGO_ENABLED=0 go build -ldflags="-s -w -X 'github.com/dcarrillo/whatismyip/internal/core.Version=${VERSION}'" -o whatismyip ./cmd
 
-.PHONY: docker-build
-docker-build:
-	docker build --build-arg=ARG_VERSION="${VERSION}" --tag ${DOCKER_URL}:${VERSION} .
+docker-build-dev:
+	docker build --target=dev --build-arg=ARG_VERSION="${VERSION}" --tag ${DOCKER_URL}:${VERSION} .
 
-.PHONY: docker-push
-docker-push: docker-build
+docker-build-prod:
+	docker build --target=prod --build-arg=ARG_VERSION="${VERSION}" --tag ${DOCKER_URL}:${VERSION} .
+
+docker-push: docker-build-prod
 ifneq (,$(findstring devel-,$(VERSION)))
 	@echo "VERSION is set to ${VERSION}, I can't push devel builds"
 	exit 1
@@ -47,8 +48,7 @@ else
 	docker push ${DOCKER_URL}:latest
 endif
 
-.PHONY: docker-run
-docker-run: docker-build
+docker-run: docker-build-dev
 	docker run --tty --interactive --rm \
 	-v ${PWD}/test/GeoIP2-City-Test.mmdb:/tmp/GeoIP2-City-Test.mmdb:ro \
 	-v ${PWD}/test/GeoLite2-ASN-Test.mmdb:/tmp/GeoLite2-ASN-Test.mmdb:ro -p 8080:8080 \

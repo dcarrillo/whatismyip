@@ -6,11 +6,15 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"slices"
+	"time"
 
 	"github.com/dcarrillo/whatismyip/internal/httputils"
 	"github.com/dcarrillo/whatismyip/internal/setting"
+	"github.com/dcarrillo/whatismyip/resolver"
 	"github.com/dcarrillo/whatismyip/server"
 	"github.com/gin-contrib/secure"
+	"github.com/patrickmn/go-cache"
 
 	"github.com/dcarrillo/whatismyip/router"
 	"github.com/gin-gonic/gin"
@@ -26,10 +30,20 @@ func main() {
 		os.Exit(1)
 	}
 
+	servers := []server.Server{}
 	engine := setupEngine()
+
+	if setting.App.Resolver.Domain != "" {
+		store := cache.New(1*time.Minute, 10*time.Minute)
+		dnsEngine := resolver.Setup(store)
+		nameServer := server.NewDNSServer(context.Background(), dnsEngine.Handler())
+		servers = append(servers, nameServer)
+		engine.Use(router.GetDNSDiscoveryHandler(store, setting.App.Resolver.Domain, setting.App.Resolver.RedirectPort))
+	}
+
 	router.SetupTemplate(engine)
 	router.Setup(engine)
-	servers := setupHTTPServers(context.Background(), engine.Handler())
+	servers = slices.Concat(servers, setupHTTPServers(context.Background(), engine.Handler()))
 
 	whatismyip := server.Setup(servers)
 	whatismyip.Run()

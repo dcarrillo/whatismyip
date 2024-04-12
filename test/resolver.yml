@@ -1,0 +1,10 @@
+---
+domain: dns.example.com
+redirect_port: ":8000"
+resource_records:
+  - "1800 IN SOA xns.example.com. hostmaster.example.com. 1 10000 2400 604800 1800"
+  - "3600 IN NS xns.example.com."
+ipv4:
+  - "127.0.0.2"
+ipv6:
+  - "aaa:aaa:aaa:aaaa::1"
