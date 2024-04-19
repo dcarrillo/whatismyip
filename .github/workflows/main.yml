@@ -11,14 +11,12 @@ on:
 jobs:
   tests:
     runs-on: ubuntu-latest
-    needs: workflow-telemetry-action
     strategy:
       matrix:
         make: ["lint", "test"]
     steps:
       - name: Collect Workflow Telemetry
         uses: catchpoint/workflow-telemetry-action@v2
-      
       - uses: actions/checkout@v4
 
       - name: install go
