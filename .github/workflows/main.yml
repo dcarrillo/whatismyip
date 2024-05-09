@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        make: ["lint", "test"]
+        make: ["lint", "unit-test", "integration-test"]
     steps:
       - uses: actions/checkout@v4
 
