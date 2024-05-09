@@ -70,7 +70,7 @@ func Setup(args []string) (output string, err error) {
 		&resolverConf,
 		"resolver",
 		"",
-		"Path to the resolver configuration. It actually enables the resolver for DNS client discover.")
+		"Path to the resolver configuration. It actually enables the resolver for DNS client discovery.")
 	flags.StringVar(
 		&App.BindAddress,
 		"bind",

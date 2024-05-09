@@ -134,7 +134,7 @@ Usage of whatismyip:
   -geoip2-city string
         Path to GeoIP2 city database
   -resolver string
-        Path to the resolver configuration. It actually enables the resolver for DNS client discover.
+        Path to the resolver configuration. It actually enables the resolver for DNS client discovery.
   -template string
         Path to template file
   -tls-bind string
