@@ -33,6 +33,19 @@ func TestGetDNSDiscoveryHandler(t *testing.T) {
 		assert.Equal(t, testIP.ipv4+"\n", w.Body.String())
 	})
 
+	t.Run("return 404 if there is a path", func(t *testing.T) {
+		req, _ := http.NewRequest("GET", "/path", nil)
+		req.Host = domain
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = req
+		handler(c)
+		app.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusNotFound, w.Code)
+	})
+
 	t.Run("redirects if host is domain", func(t *testing.T) {
 		req, _ := http.NewRequest("GET", "/", nil)
 		req.Host = domain

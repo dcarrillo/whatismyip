@@ -31,7 +31,7 @@ func GetDNSDiscoveryHandler(store *cache.Cache, domain string, redirectPort stri
 			return
 		}
 
-		if ctx.Request.Host == domain {
+		if ctx.Request.Host == domain && ctx.Request.URL.Path == "/" {
 			ctx.Redirect(http.StatusFound, fmt.Sprintf("http://%s.%s%s", uuid.New().String(), domain, redirectPort))
 			ctx.Abort()
 			return

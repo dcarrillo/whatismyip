@@ -32,7 +32,7 @@ Take a look at [ifconfig.es](https://ifconfig.es) a live site using `whatismyip`
 
 Get your public IP easily from the command line:
 
-```text
+```bash
 curl ifconfig.es
 127.0.0.1
 
@@ -42,7 +42,7 @@ curl -6 ifconfig.es
 
 Get the IP of your DNS provider:
 
-```text
+```bash
 curl -L dns.ifconfig.es
 2a04:e4c0:47::67 (Spain / OPENDNS)
 ```
