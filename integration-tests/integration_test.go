@@ -84,7 +84,7 @@ func TestContainerIntegration(t *testing.T) {
 	require.NoError(t, err, "NewDockerComposeAPIWith()")
 
 	t.Cleanup(func() {
-		require.NoError(t, compose.Down(context.Background()), "compose.Down()")
+		require.NoError(t, compose.Down(context.Background(), tc.RemoveOrphans(true), tc.RemoveImagesLocal), "compose.Down()")
 	})
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
