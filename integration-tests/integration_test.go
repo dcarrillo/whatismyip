@@ -10,13 +10,16 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	validator "github.com/dcarrillo/whatismyip/internal/validator/uuid"
 	"github.com/dcarrillo/whatismyip/router"
+	"github.com/docker/docker/api/types"
 	"github.com/quic-go/quic-go/http3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	tc "github.com/testcontainers/testcontainers-go/modules/compose"
+	tc "github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func customDialContext() func(ctx context.Context, network, addr string) (net.Conn, error) {
@@ -80,15 +83,70 @@ func TestContainerIntegration(t *testing.T) {
 		t.Skip("Skiping integration tests")
 	}
 
-	compose, err := tc.NewDockerComposeWith(tc.WithStackFiles("../test/docker-compose.yml"), tc.StackIdentifier("whatismyip"))
-	require.NoError(t, err, "NewDockerComposeAPIWith()")
-
-	t.Cleanup(func() {
-		require.NoError(t, compose.Down(context.Background(), tc.RemoveOrphans(true), tc.RemoveImagesLocal), "compose.Down()")
+	ctx := context.Background()
+	c, err := tc.GenericContainer(ctx, tc.GenericContainerRequest{
+		ContainerRequest: tc.ContainerRequest{
+			FromDockerfile: tc.FromDockerfile{
+				Context:       "../",
+				Dockerfile:    "./test/Dockerfile",
+				PrintBuildLog: true,
+				KeepImage:     false,
+				BuildOptionsModifier: func(buildOptions *types.ImageBuildOptions) {
+					buildOptions.Target = "test"
+				},
+			},
+			ExposedPorts: []string{
+				"8000:8000",
+				"8001:8001",
+				"8001:8001/udp",
+				"53531:53/udp",
+			},
+			Cmd: []string{
+				"-geoip2-city", "/GeoIP2-City-Test.mmdb",
+				"-geoip2-asn", "/GeoLite2-ASN-Test.mmdb",
+				"-bind", ":8000",
+				"-tls-bind", ":8001",
+				"-tls-crt", "/server.pem",
+				"-tls-key", "/server.key",
+				"-trusted-header", "X-Real-IP",
+				"-enable-secure-headers",
+				"-enable-http3",
+				"-resolver", "/resolver.yml",
+			},
+			Files: []tc.ContainerFile{
+				{
+					HostFilePath:      "./../test/GeoIP2-City-Test.mmdb",
+					ContainerFilePath: "/GeoIP2-City-Test.mmdb",
+				},
+				{
+					HostFilePath:      "./../test/GeoLite2-ASN-Test.mmdb",
+					ContainerFilePath: "/GeoLite2-ASN-Test.mmdb",
+				},
+				{
+					HostFilePath:      "./../test/server.pem",
+					ContainerFilePath: "/server.pem",
+				},
+				{
+					HostFilePath:      "./../test/server.key",
+					ContainerFilePath: "/server.key",
+				},
+				{
+					HostFilePath:      "./../test/resolver.yml",
+					ContainerFilePath: "/resolver.yml",
+				},
+			},
+			WaitingFor: wait.ForAll(
+				wait.ForListeningPort("8000/tcp").WithStartupTimeout(5*time.Second),
+				wait.ForListeningPort("8001/tcp").WithStartupTimeout(5*time.Second),
+				wait.ForListeningPort("8001/udp").WithStartupTimeout(5*time.Second),
+				wait.ForListeningPort("53/udp").WithStartupTimeout(5*time.Second),
+			),
+			AutoRemove: true,
+		},
+		Started: true,
 	})
-	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
-	require.NoError(t, compose.Up(ctx, tc.Wait(true)), "compose.Up()")
+	require.NoError(t, err)
+	t.Cleanup(func() { c.Terminate(ctx) })
 
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	tests := []struct {

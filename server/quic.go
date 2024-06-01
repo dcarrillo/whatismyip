@@ -31,7 +31,7 @@ func (q *Quic) Start() {
 
 	parentHandler := q.tlsServer.server.Handler
 	q.tlsServer.server.Handler = http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		if err := q.server.SetQuicHeaders(rw.Header()); err != nil {
+		if err := q.server.SetQUICHeaders(rw.Header()); err != nil {
 			log.Fatal(err)
 		}
 
