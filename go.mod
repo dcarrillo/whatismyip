@@ -3,7 +3,7 @@ module github.com/dcarrillo/whatismyip
 go 1.22
 
 require (
-	github.com/docker/docker v26.1.3+incompatible
+	github.com/docker/docker v26.1.4+incompatible
 	github.com/gin-contrib/secure v1.1.0
 	github.com/gin-gonic/gin v1.10.0
 	github.com/google/uuid v1.6.0
