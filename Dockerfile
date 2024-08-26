@@ -1,7 +1,7 @@
-FROM golang:1.22-alpine as builder
+FROM golang:1.23-alpine AS builder
 
 ARG ARG_VERSION
-ENV VERSION $ARG_VERSION
+ENV VERSION=$ARG_VERSION
 
 WORKDIR /app
 COPY go.mod .
