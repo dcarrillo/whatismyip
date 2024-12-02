@@ -240,7 +240,7 @@ func TestContainerIntegration(t *testing.T) {
 }
 
 func doQuicRequest(req *http.Request) (*http.Response, []byte, error) {
-	roundTripper := &http3.RoundTripper{
+	roundTripper := &http3.Transport{
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: true,
 		},
