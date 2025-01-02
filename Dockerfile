@@ -15,6 +15,8 @@ RUN --mount=type=cache,target=/go/pkg/mod/ apk --no-cache add make && make build
 
 FROM builder AS build-prod-app
 # hadolint ignore=DL3018
+RUN apk update && apk add --no-cache ca-certificates && update-ca-certificates
+# hadolint ignore=DL3018
 RUN --mount=type=cache,target=/go/pkg/mod/ apk --no-cache add make upx \
     && make build \
     && upx --best --lzma whatismyip

@@ -50,9 +50,10 @@ endif
 
 docker-run: docker-build-dev
 	docker run --tty --interactive --rm \
-	-v ${PWD}/test/GeoIP2-City-Test.mmdb:/tmp/GeoIP2-City-Test.mmdb:ro \
-	-v ${PWD}/test/GeoLite2-ASN-Test.mmdb:/tmp/GeoLite2-ASN-Test.mmdb:ro -p 8080:8080 \
-	${DOCKER_URL}:${VERSION} \
-		-geoip2-city /tmp/GeoIP2-City-Test.mmdb \
-		-geoip2-asn /tmp/GeoLite2-ASN-Test.mmdb \
+		--publish 8080:8080 \
+		--volume ${PWD}/test/GeoIP2-City-Test.mmdb:/GeoIP2-City-Test.mmdb \
+		--volume ${PWD}/test/GeoLite2-ASN-Test.mmdb:/GeoLite2-ASN-Test.mmdb \
+		${DOCKER_URL}:${VERSION} \
+		-geoip2-city /GeoIP2-City-Test.mmdb \
+		-geoip2-asn /GeoLite2-ASN-Test.mmdb \
 		-trusted-header X-Real-IP

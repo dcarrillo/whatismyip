@@ -12,9 +12,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type geodbPath struct {
-	City string
-	ASN  string
+type geodbConf struct {
+	City  string
+	ASN   string
+	Token *string
 }
 type serverSettings struct {
 	ReadTimeout  time.Duration
@@ -30,7 +31,7 @@ type resolver struct {
 }
 
 type settings struct {
-	GeodbPath           geodbPath
+	GeodbPath           geodbConf
 	TemplatePath        string
 	BindAddress         string
 	TLSAddress          string
@@ -63,8 +64,8 @@ func Setup(args []string) (output string, err error) {
 	var resolverConf string
 	flags.SetOutput(&buf)
 
-	flags.StringVar(&App.GeodbPath.City, "geoip2-city", "", "Path to GeoIP2 city database")
-	flags.StringVar(&App.GeodbPath.ASN, "geoip2-asn", "", "Path to GeoIP2 ASN database")
+	flags.StringVar(&App.GeodbPath.City, "geoip2-city", "", "Path to GeoIP2 city database. Enables geo information (--geoip2-asn becomes mandatory)")
+	flags.StringVar(&App.GeodbPath.ASN, "geoip2-asn", "", "Path to GeoIP2 ASN database. Enables ASN information. (--geoip2-city becomes mandatory)")
 	flags.StringVar(&App.TemplatePath, "template", "", "Path to the template file")
 	flags.StringVar(
 		&resolverConf,
@@ -120,12 +121,12 @@ func Setup(args []string) (output string, err error) {
 		return fmt.Sprintf("whatismyip version %s", core.Version), ErrVersion
 	}
 
-	if App.TrustedPortHeader != "" && App.TrustedHeader == "" {
-		return "", fmt.Errorf("truster-header is mandatory when truster-port-header is set")
+	if (App.GeodbPath.City != "" && App.GeodbPath.ASN == "") || (App.GeodbPath.City == "" && App.GeodbPath.ASN != "") {
+		return "", fmt.Errorf("both --geoip2-city and --geoip2-asn are mandatory to enable geo information")
 	}
 
-	if App.GeodbPath.City == "" || App.GeodbPath.ASN == "" {
-		return "", fmt.Errorf("geoip2-city and geoip2-asn parameters are mandatory")
+	if App.TrustedPortHeader != "" && App.TrustedHeader == "" {
+		return "", fmt.Errorf("truster-header is mandatory when truster-port-header is set")
 	}
 
 	if (App.TLSAddress != "") && (App.TLSCrtPath == "" || App.TLSKeyPath == "") {
@@ -150,7 +151,7 @@ func Setup(args []string) (output string, err error) {
 		var err error
 		App.Resolver, err = readYAML(resolverConf)
 		if err != nil {
-			return "", fmt.Errorf("error reading resolver configuration %s", err)
+			return "", fmt.Errorf("error reading resolver configuration %w", err)
 		}
 	}
 

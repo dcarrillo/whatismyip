@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/dcarrillo/whatismyip/models"
-	"github.com/dcarrillo/whatismyip/service"
 	"github.com/gin-gonic/gin"
 )
 
@@ -83,10 +82,13 @@ var asnOutput = map[string]asnDataFormatter{
 }
 
 func getGeoAsString(ctx *gin.Context) {
-	field := strings.ToLower(ctx.Params.ByName("field"))
-	ip := service.Geo{IP: net.ParseIP(ctx.ClientIP())}
-	record := ip.LookUpCity()
+	if geoSvc == nil {
+		ctx.String(http.StatusNotFound, http.StatusText(http.StatusNotFound))
+		return
+	}
 
+	field := strings.ToLower(ctx.Params.ByName("field"))
+	record := geoSvc.LookUpCity(net.ParseIP(ctx.ClientIP()))
 	if field == "" {
 		ctx.String(http.StatusOK, geoCityRecordToString(record))
 	} else if g, ok := geoOutput[field]; ok {
@@ -97,10 +99,12 @@ func getGeoAsString(ctx *gin.Context) {
 }
 
 func getASNAsString(ctx *gin.Context) {
+	if geoSvc == nil {
+		ctx.String(http.StatusNotFound, http.StatusText(http.StatusNotFound))
+		return
+	}
 	field := strings.ToLower(ctx.Params.ByName("field"))
-	ip := service.Geo{IP: net.ParseIP(ctx.ClientIP())}
-	record := ip.LookUpASN()
-
+	record := geoSvc.LookUpASN(net.ParseIP(ctx.ClientIP()))
 	if field == "" {
 		ctx.String(http.StatusOK, geoASNRecordToString(record))
 	} else if g, ok := asnOutput[field]; ok {

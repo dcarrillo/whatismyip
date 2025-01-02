@@ -41,7 +41,7 @@ func (d *DNS) Start() {
 }
 
 func (d *DNS) Stop() {
-	log.Printf("Stopping DNS server...")
+	log.Print("Stopping DNS server...")
 	if err := d.server.Shutdown(); err != nil {
 		log.Printf("DNS server forced to shutdown: %s", err)
 	}

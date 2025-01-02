@@ -1,36 +1,33 @@
 package service
 
 import (
+	"context"
 	"net"
 	"os"
 	"testing"
 
-	"github.com/dcarrillo/whatismyip/models"
 	"github.com/stretchr/testify/assert"
 )
 
+var geoSvc *Geo
+
 func TestMain(m *testing.M) {
-	models.Setup("../test/GeoIP2-City-Test.mmdb", "../test/GeoLite2-ASN-Test.mmdb")
-	defer models.CloseDBs()
+	geoSvc, _ = NewGeo(context.Background(), "../test/GeoIP2-City-Test.mmdb", "../test/GeoLite2-ASN-Test.mmdb")
 	os.Exit(m.Run())
 }
 
 func TestCityLookup(t *testing.T) {
-	ip := Geo{IP: net.ParseIP("error")}
-	c := ip.LookUpCity()
+	c := geoSvc.LookUpCity(net.ParseIP("error"))
 	assert.Nil(t, c)
 
-	ip = Geo{IP: net.ParseIP("1.1.1.1")}
-	c = ip.LookUpCity()
+	c = geoSvc.LookUpCity(net.ParseIP("1.1.1.1"))
 	assert.NotNil(t, c)
 }
 
 func TestASNLookup(t *testing.T) {
-	ip := Geo{IP: net.ParseIP("error")}
-	a := ip.LookUpASN()
+	a := geoSvc.LookUpASN(net.ParseIP("error"))
 	assert.Nil(t, a)
 
-	ip = Geo{IP: net.ParseIP("1.1.1.1")}
-	a = ip.LookUpASN()
+	a = geoSvc.LookUpASN(net.ParseIP("1.1.1.1"))
 	assert.NotNil(t, a)
 }

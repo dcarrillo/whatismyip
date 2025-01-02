@@ -13,6 +13,7 @@ import (
 	"github.com/dcarrillo/whatismyip/internal/setting"
 	"github.com/dcarrillo/whatismyip/resolver"
 	"github.com/dcarrillo/whatismyip/server"
+	"github.com/dcarrillo/whatismyip/service"
 	"github.com/gin-contrib/secure"
 	"github.com/patrickmn/go-cache"
 
@@ -41,11 +42,20 @@ func main() {
 		engine.Use(router.GetDNSDiscoveryHandler(store, setting.App.Resolver.Domain, setting.App.Resolver.RedirectPort))
 	}
 
+	var geoSvc *service.Geo
+	if setting.App.GeodbPath.City != "" || setting.App.GeodbPath.ASN != "" {
+		var err error
+		geoSvc, err = service.NewGeo(context.Background(), setting.App.GeodbPath.City, setting.App.GeodbPath.ASN)
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	router.SetupTemplate(engine)
-	router.Setup(engine)
+	router.Setup(engine, geoSvc)
 	servers = slices.Concat(servers, setupHTTPServers(context.Background(), engine.Handler()))
 
-	whatismyip := server.Setup(servers)
+	whatismyip := server.Setup(servers, geoSvc)
 	whatismyip.Run()
 }
 

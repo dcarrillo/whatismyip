@@ -6,8 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/dcarrillo/whatismyip/internal/setting"
-	"github.com/dcarrillo/whatismyip/models"
+	"github.com/dcarrillo/whatismyip/service"
 )
 
 type Server interface {
@@ -17,18 +16,19 @@ type Server interface {
 
 type Manager struct {
 	servers []Server
+	geoSvc  *service.Geo
 }
 
-func Setup(servers []Server) *Manager {
+func Setup(servers []Server, geoSvc *service.Geo) *Manager {
 	return &Manager{
 		servers: servers,
+		geoSvc:  geoSvc,
 	}
 }
 
 func (m *Manager) Run() {
 	m.start()
 
-	models.Setup(setting.App.GeodbPath.City, setting.App.GeodbPath.ASN)
 	signalChan := make(chan os.Signal, len(m.servers))
 	signal.Notify(signalChan, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM)
 	var s os.Signal
@@ -37,13 +37,16 @@ func (m *Manager) Run() {
 
 		if s == syscall.SIGHUP {
 			m.stop()
-			models.CloseDBs()
-			models.Setup(setting.App.GeodbPath.City, setting.App.GeodbPath.ASN)
+			if m.geoSvc != nil {
+				m.geoSvc.Reload()
+			}
 			m.start()
 		} else {
-			log.Printf("Shutting down...")
+			log.Print("Shutting down...")
+			if m.geoSvc != nil {
+				m.geoSvc.Shutdown()
+			}
 			m.stop()
-			models.CloseDBs()
 			break
 		}
 	}

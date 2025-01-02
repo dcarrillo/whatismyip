@@ -48,8 +48,8 @@ func (q *Quic) Start() {
 }
 
 func (q *Quic) Stop() {
-	log.Printf("Stopping QUIC server...")
+	log.Print("Stopping QUIC server...")
 	if err := q.server.Close(); err != nil {
-		log.Printf("QUIC server forced to shutdown")
+		log.Print("QUIC server forced to shutdown")
 	}
 }
