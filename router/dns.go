@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	validator "github.com/dcarrillo/whatismyip/internal/validator/uuid"
-	"github.com/dcarrillo/whatismyip/service"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/patrickmn/go-cache"
@@ -16,10 +15,14 @@ import (
 type DNSJSONResponse struct {
 	DNS dnsData `json:"dns"`
 }
+type dnsGeoData struct {
+	Country         string `json:"country,omitempty"`
+	AsnOrganization string `json:"provider,omitempty"`
+}
+
 type dnsData struct {
-	IP              string `json:"ip"`
-	Country         string `json:"country"`
-	AsnOrganization string `json:"provider"`
+	IP string `json:"ip"`
+	dnsGeoData
 }
 
 // TODO
@@ -67,12 +70,21 @@ func handleDNS(ctx *gin.Context, store *cache.Cache) {
 		return
 	}
 
-	geo := service.Geo{IP: ip}
+	geoResp := dnsGeoData{}
+	if geoSvc != nil {
+		cityRecord := geoSvc.LookUpCity(ip)
+		asnRecord := geoSvc.LookUpASN(ip)
+
+		geoResp = dnsGeoData{
+			Country:         cityRecord.Country.Names["en"],
+			AsnOrganization: asnRecord.AutonomousSystemOrganization,
+		}
+	}
+
 	j := DNSJSONResponse{
 		DNS: dnsData{
-			IP:              ipStr,
-			Country:         geo.LookUpCity().Country.Names["en"],
-			AsnOrganization: geo.LookUpASN().AutonomousSystemOrganization,
+			IP:         ipStr,
+			dnsGeoData: geoResp,
 		},
 	}
 

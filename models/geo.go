@@ -1,13 +1,13 @@
 package models
 
 import (
+	"fmt"
 	"log"
 	"net"
 
 	"github.com/oschwald/maxminddb-golang"
 )
 
-// GeoRecord is the model for City database
 type GeoRecord struct {
 	Country struct {
 		ISOCode string            `maxminddb:"iso_code"`
@@ -26,52 +26,107 @@ type GeoRecord struct {
 	} `maxminddb:"postal"`
 }
 
-// ASNRecord is the model for ASN database
 type ASNRecord struct {
 	AutonomousSystemNumber       uint   `maxminddb:"autonomous_system_number"`
 	AutonomousSystemOrganization string `maxminddb:"autonomous_system_organization"`
 }
 
-type geodb struct {
-	city *maxminddb.Reader
-	asn  *maxminddb.Reader
+type GeoDB struct {
+	cityPath string
+	asnPath  string
+	City     *maxminddb.Reader
+	ASN      *maxminddb.Reader
 }
 
-var db geodb
+func Setup(cityPath string, asnPath string) (*GeoDB, error) {
+	city, asn, err := openDatabases(cityPath, asnPath)
+	if err != nil {
+		return nil, err
+	}
 
-func openMMDB(path string) *maxminddb.Reader {
+	return &GeoDB{
+		cityPath: cityPath,
+		asnPath:  asnPath,
+		City:     city,
+		ASN:      asn,
+	}, nil
+}
+
+func (db *GeoDB) CloseDBs() error {
+	var errs []error
+
+	if db.City != nil {
+		if err := db.City.Close(); err != nil {
+			errs = append(errs, fmt.Errorf("closing city db: %w", err))
+		}
+	}
+
+	if db.ASN != nil {
+		if err := db.ASN.Close(); err != nil {
+			errs = append(errs, fmt.Errorf("closing ASN db: %w", err))
+		}
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("errors closing databases: %s", errs)
+	}
+	return nil
+}
+
+func (db *GeoDB) Reload() error {
+	if err := db.CloseDBs(); err != nil {
+		return fmt.Errorf("closing existing connections: %w", err)
+	}
+
+	city, asn, err := openDatabases(db.cityPath, db.asnPath)
+	if err != nil {
+		return fmt.Errorf("opening new connections: %w", err)
+	}
+
+	db.City = city
+	db.ASN = asn
+	return nil
+}
+
+func (db *GeoDB) LookupCity(ip net.IP) (*GeoRecord, error) {
+	record := &GeoRecord{}
+	err := db.City.Lookup(ip, record)
+	if err != nil {
+		return nil, err
+	}
+
+	return record, nil
+}
+
+func (db *GeoDB) LookupASN(ip net.IP) (*ASNRecord, error) {
+	record := &ASNRecord{}
+	err := db.ASN.Lookup(ip, record)
+	if err != nil {
+		return nil, err
+	}
+	return record, nil
+}
+
+func openDatabases(cityPath, asnPath string) (*maxminddb.Reader, *maxminddb.Reader, error) {
+	city, err := openMMDB(cityPath)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	asn, err := openMMDB(asnPath)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return city, asn, nil
+}
+
+func openMMDB(path string) (*maxminddb.Reader, error) {
 	db, err := maxminddb.Open(path)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	log.Printf("Database %s has been loaded\n", path)
 
-	return db
-}
-
-// Setup opens all Geolite2 databases
-func Setup(cityPath string, asnPath string) {
-	db.city = openMMDB(cityPath)
-	db.asn = openMMDB(asnPath)
-}
-
-// CloseDBs unmaps from memory and frees resources to the filesystem
-func CloseDBs() {
-	log.Printf("Closing dbs...")
-	if err := db.city.Close(); err != nil {
-		log.Printf("Error closing city db: %s", err)
-	}
-	if err := db.asn.Close(); err != nil {
-		log.Printf("Error closing ASN db: %s", err)
-	}
-}
-
-// LookUp an IP and get city data
-func (record *GeoRecord) LookUp(ip net.IP) error {
-	return db.city.Lookup(ip, record)
-}
-
-// LookUp an IP and get ASN data
-func (record *ASNRecord) LookUp(ip net.IP) error {
-	return db.asn.Lookup(ip, record)
+	return db, nil
 }

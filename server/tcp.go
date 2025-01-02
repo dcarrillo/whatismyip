@@ -39,7 +39,7 @@ func (t *TCP) Start() {
 }
 
 func (t *TCP) Stop() {
-	log.Printf("Stopping TCP server...")
+	log.Print("Stopping TCP server...")
 	if err := t.server.Shutdown(t.ctx); err != nil {
 		log.Printf("TCP server forced to shutdown: %s", err)
 	}

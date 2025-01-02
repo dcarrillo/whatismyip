@@ -14,7 +14,8 @@
   - [Usage](#usage)
   - [Examples](#examples)
     - [Run a default TCP server](#run-a-default-tcp-server)
-    - [Run a TLS (HTTP/2) and enable What is my DNS](#run-a-tls-http2-and-enable-what-is-my-dns)
+    - [Run a default TCP server with geo information enabled](#run-a-default-tco-server-with-geo-information-enabled)
+    - [Run a TLS (HTTP/2) and enable "what is my DNS" with geo information](#run-a-tls-http2-and-enable-what-is-my-dns-with-geo-information)
     - [Run an HTTP/3 server](#run-an-http3-server)
     - [Run a default TCP server with a custom template and trust a pair of custom headers set by an upstream proxy](#run-a-default-tcp-server-with-a-custom-template-and-trust-a-pair-of-custom-headers-set-by-an-upstream-proxy)
   - [Download](#download)
@@ -22,7 +23,8 @@
     - [Run a container locally using test databases](#run-a-container-locally-using-test-databases)
     - [From Docker Hub](#from-docker-hub)
 
-> [!NOTE]  
+> [!NOTE]
+> Since version 3.0.0, geodb database is not mandatory, not adding the flags will disable the geo feature.
 > Since version 2.3.0, the application includes an optional client [DNS discovery](#dns-discovery)
 
 Just another "what is my IP address" service, including geolocation, TCP open port checking, and headers information. Written in go with high performance in mind,
@@ -124,31 +126,31 @@ Golang >= 1.22 is required.
 ```text
 Usage of whatismyip:
   -bind string
-        Listening address (see https://pkg.go.dev/net?#Listen) (default ":8080")
+      Listening address (see https://pkg.go.dev/net?#Listen) (default ":8080")
   -enable-http3
-        Enable HTTP/3 protocol. HTTP/3 requires --tls-bind set, as HTTP/3 starts as a TLS connection that then gets upgraded to UDP. The UDP port is the same as the one used for the TLS server.
+      Enable HTTP/3 protocol. HTTP/3 requires --tls-bind set, as HTTP/3 starts as a TLS connection that then gets upgraded to UDP. The UDP port is the same as the one used for the TLS server.
   -enable-secure-headers
-        Add sane security-related headers to every response
+      Add sane security-related headers to every response
   -geoip2-asn string
-        Path to GeoIP2 ASN database
+      Path to GeoIP2 ASN database. Enables ASN information. (--geoip2-city becomes mandatory)
   -geoip2-city string
-        Path to GeoIP2 city database
+      Path to GeoIP2 city database. Enables geo information (--geoip2-asn becomes mandatory)
   -resolver string
-        Path to the resolver configuration. It actually enables the resolver for DNS client discovery.
+      Path to the resolver configuration. It actually enables the resolver for DNS client discovery.
   -template string
-        Path to template file
+      Path to the template file
   -tls-bind string
-        Listening address for TLS (see https://pkg.go.dev/net?#Listen)
+      Listening address for TLS (see https://pkg.go.dev/net?#Listen)
   -tls-crt string
-        When using TLS, path to certificate file
+      When using TLS, path to certificate file
   -tls-key string
-        When using TLS, path to private key file
+      When using TLS, path to private key file
   -trusted-header string
-        Trusted request header for remote IP (e.g. X-Real-IP). When using this feature if -trusted-port-header is not set the client port is shown as 'unknown'
+      Trusted request header for remote IP (e.g. X-Real-IP). When using this feature if -trusted-port-header is not set the client port is shown as 'unknown'
   -trusted-port-header string
-        Trusted request header for remote client port (e.g. X-Real-Port). When this parameter is set -trusted-header becomes mandatory
+      Trusted request header for remote client port (e.g. X-Real-Port). When this parameter is set -trusted-header becomes mandatory
   -version
-        Output version information and exit
+      Output version information and exit
 ```
 
 ## Examples
@@ -156,10 +158,16 @@ Usage of whatismyip:
 ### Run a default TCP server
 
 ```bash
+./whatismyip
+```
+
+### Run a default TCP server with geo information enabled
+
+```bash
 ./whatismyip -geoip2-city ./test/GeoIP2-City-Test.mmdb -geoip2-asn ./test/GeoLite2-ASN-Test.mmdb
 ```
 
-### Run a TLS (HTTP/2) and enable What is my DNS
+### Run a TLS (HTTP/2) and enable "what is my DNS" with geo information
 
 ```bash
 ./whatismyip -geoip2-city ./test/GeoIP2-City-Test.mmdb -geoip2-asn ./test/GeoLite2-ASN-Test.mmdb \

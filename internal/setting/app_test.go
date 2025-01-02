@@ -12,44 +12,43 @@ import (
 )
 
 func TestParseMandatoryFlags(t *testing.T) {
-	var mandatoryFlags = []struct {
+	mandatoryFlags := []struct {
 		args []string
 	}{
 		{
-			[]string{},
-		},
-		{
-			[]string{"-geoip2-city", "/city-path"},
-		},
-		{
-			[]string{"-geoip2-asn", "/asn-path"},
-		},
-		{
 			[]string{
-				"-geoip2-city", "/city-path", "-geoip2-asn", "/asn-path", "-tls-bind", ":9000",
+				"-geoip2-city", "my-city-path",
 			},
 		},
 		{
 			[]string{
-				"-geoip2-city", "/city-path", "-geoip2-asn", "/asn-path", "-tls-bind", ":9000",
-				"-tls-crt", "/crt-path",
+				"-geoip2-asn", "my-asn-path",
+			},
+		},
+
+		{
+			[]string{
+				"-tls-bind", ":9000",
 			},
 		},
 		{
 			[]string{
-				"-geoip2-city", "/city-path", "-geoip2-asn", "/asn-path", "-tls-bind", ":9000",
-				"-tls-key", "/key-path",
+				"-tls-bind", ":9000", "-tls-crt", "/crt-path",
 			},
 		},
 		{
 			[]string{
-				"-geoip2-city", "/city-path", "-geoip2-asn", "/asn-path", "-enable-http3",
+				"-tls-bind", ":9000", "-tls-key", "/key-path",
 			},
 		},
 		{
 			[]string{
-				"-geoip2-city", "/city-path", "-geoip2-asn", "/asn-path", "-bind", ":8000",
-				"-trusted-port-header", "port-header",
+				"-enable-http3",
+			},
+		},
+		{
+			[]string{
+				"-bind", ":8000", "-trusted-port-header", "port-header",
 			},
 		},
 	}
@@ -57,24 +56,20 @@ func TestParseMandatoryFlags(t *testing.T) {
 	for _, tt := range mandatoryFlags {
 		t.Run(strings.Join(tt.args, " "), func(t *testing.T) {
 			_, err := Setup(tt.args)
-			require.NotNil(t, err)
+			require.Error(t, err)
 			assert.Contains(t, err.Error(), "mandatory")
 		})
 	}
 }
 
 func TestParseFlags(t *testing.T) {
-	var flags = []struct {
+	flags := []struct {
 		args []string
 		conf settings
 	}{
 		{
-			[]string{"-geoip2-city", "/city-path", "-geoip2-asn", "/asn-path"},
+			[]string{},
 			settings{
-				GeodbPath: geodbPath{
-					City: "/city-path",
-					ASN:  "/asn-path",
-				},
 				BindAddress: ":8080",
 				Server: serverSettings{
 					ReadTimeout:  10 * time.Second,
@@ -85,7 +80,7 @@ func TestParseFlags(t *testing.T) {
 		{
 			[]string{"-bind", ":8001", "-geoip2-city", "/city-path", "-geoip2-asn", "/asn-path"},
 			settings{
-				GeodbPath: geodbPath{
+				GeodbPath: geodbConf{
 					City: "/city-path",
 					ASN:  "/asn-path",
 				},
@@ -102,7 +97,7 @@ func TestParseFlags(t *testing.T) {
 				"-tls-crt", "/crt-path", "-tls-key", "/key-path",
 			},
 			settings{
-				GeodbPath: geodbPath{
+				GeodbPath: geodbConf{
 					City: "/city-path",
 					ASN:  "/asn-path",
 				},
@@ -122,7 +117,7 @@ func TestParseFlags(t *testing.T) {
 				"-trusted-header", "header", "-trusted-port-header", "port-header",
 			},
 			settings{
-				GeodbPath: geodbPath{
+				GeodbPath: geodbConf{
 					City: "/city-path",
 					ASN:  "/asn-path",
 				},
@@ -141,7 +136,7 @@ func TestParseFlags(t *testing.T) {
 				"-trusted-header", "header", "-enable-secure-headers",
 			},
 			settings{
-				GeodbPath: geodbPath{
+				GeodbPath: geodbConf{
 					City: "/city-path",
 					ASN:  "/asn-path",
 				},
@@ -166,7 +161,7 @@ func TestParseFlags(t *testing.T) {
 }
 
 func TestParseFlagsUsage(t *testing.T) {
-	var usageArgs = []string{"-help", "-h", "--help"}
+	usageArgs := []string{"-help", "-h", "--help"}
 
 	for _, arg := range usageArgs {
 		t.Run(arg, func(t *testing.T) {
@@ -184,19 +179,28 @@ func TestParseFlagVersion(t *testing.T) {
 }
 
 func TestParseFlagTemplate(t *testing.T) {
-	flags := []string{
-		"-geoip2-city", "/city-path", "-geoip2-asn", "/asn-path",
-		"-template", "/template-path",
+	testCases := []struct {
+		name   string
+		flags  []string
+		errMsg string
+	}{
+		{
+			name:   "Invalid template path",
+			flags:  []string{"-template", "/template-path"},
+			errMsg: "no such file or directory",
+		},
+		{
+			name:   "Template path is a directory",
+			flags:  []string{"-template", "/"},
+			errMsg: "must be a file",
+		},
 	}
-	_, err := Setup(flags)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "no such file or directory")
 
-	flags = []string{
-		"-geoip2-city", "/city-path", "-geoip2-asn", "/asn-path",
-		"-template", "/",
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := Setup(tc.flags)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tc.errMsg)
+		})
 	}
-	_, err = Setup(flags)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "must be a file")
 }

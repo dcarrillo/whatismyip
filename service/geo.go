@@ -1,37 +1,73 @@
 package service
 
 import (
+	"context"
 	"log"
 	"net"
+	"sync"
 
 	"github.com/dcarrillo/whatismyip/models"
 )
 
-// Geo defines a base type for lookups
 type Geo struct {
-	IP net.IP
+	ctx    context.Context
+	cancel context.CancelFunc
+	db     *models.GeoDB
+	mu     sync.RWMutex
 }
 
-// LookUpCity queries the database for city data related to the given IP
-func (g *Geo) LookUpCity() *models.GeoRecord {
-	record := &models.GeoRecord{}
-	err := record.LookUp(g.IP)
+func NewGeo(ctx context.Context, cityPath string, asnPath string) (*Geo, error) {
+	ctx, cancel := context.WithCancel(ctx)
+
+	db, err := models.Setup(cityPath, asnPath)
 	if err != nil {
-		log.Println(err)
+		cancel()
+		return nil, err
+	}
+
+	geo := &Geo{
+		ctx:    ctx,
+		cancel: cancel,
+		db:     db,
+	}
+
+	return geo, nil
+}
+
+func (g *Geo) LookUpCity(ip net.IP) *models.GeoRecord {
+	record, err := g.db.LookupCity(ip)
+	if err != nil {
+		log.Print(err)
 		return nil
 	}
 
 	return record
 }
 
-// LookUpASN queries the database for ASN data related to the given IP
-func (g *Geo) LookUpASN() *models.ASNRecord {
-	record := &models.ASNRecord{}
-	err := record.LookUp(g.IP)
+func (g *Geo) LookUpASN(ip net.IP) *models.ASNRecord {
+	record, err := g.db.LookupASN(ip)
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 		return nil
 	}
 
 	return record
+}
+
+func (g *Geo) Shutdown() {
+	g.cancel()
+	g.db.CloseDBs()
+}
+
+func (g *Geo) Reload() {
+	if err := g.ctx.Err(); err != nil {
+		log.Printf("Skipping reload, service is shutting down: %v", err)
+		return
+	}
+
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
+	g.db.Reload()
+	log.Print("Geo database reloaded")
 }

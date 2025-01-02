@@ -5,8 +5,11 @@ import (
 	"log"
 
 	"github.com/dcarrillo/whatismyip/internal/setting"
+	"github.com/dcarrillo/whatismyip/service"
 	"github.com/gin-gonic/gin"
 )
+
+var geoSvc *service.Geo
 
 func SetupTemplate(r *gin.Engine) {
 	if setting.App.TemplatePath == "" {
@@ -18,7 +21,8 @@ func SetupTemplate(r *gin.Engine) {
 	}
 }
 
-func Setup(r *gin.Engine) {
+func Setup(r *gin.Engine, geo *service.Geo) {
+	geoSvc = geo
 	r.GET("/", getRoot)
 	r.GET("/scan/tcp/:port", scanTCPPort)
 	r.GET("/client-port", getClientPortAsString)

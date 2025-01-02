@@ -200,8 +200,10 @@ func TestContainerIntegration(t *testing.T) {
 				resp, body, err = doQuicRequest(req)
 			} else {
 				client := &http.Client{}
-				resp, _ = client.Do(req)
+				resp, err = client.Do(req)
+				assert.NoError(t, err)
 				body, err = io.ReadAll(resp.Body)
+				assert.NoError(t, err)
 				if strings.Contains(tt.url, "https://") {
 					assert.Equal(t, `h3=":8001"; ma=2592000`, resp.Header.Get("Alt-Svc"))
 				}

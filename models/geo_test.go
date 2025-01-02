@@ -1,10 +1,12 @@
 package models
 
 import (
+	"fmt"
 	"net"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestModels(t *testing.T) {
@@ -59,19 +61,21 @@ func TestModels(t *testing.T) {
 		AutonomousSystemOrganization: "IP-Only",
 	}
 
-	Setup("../test/GeoIP2-City-Test.mmdb", "../test/GeoLite2-ASN-Test.mmdb")
-	defer CloseDBs()
+	db, err := Setup("../test/GeoIP2-City-Test.mmdb", "../test/GeoLite2-ASN-Test.mmdb")
+	require.NoError(t, err, fmt.Sprintf("Error setting up db: %s", err))
+	defer db.CloseDBs()
+	assert.NotNil(t, db.ASN)
+	assert.NotNil(t, db.City)
 
-	assert.NotNil(t, db.asn)
-	assert.NotNil(t, db.city)
-
-	cityRecord := &GeoRecord{}
-	assert.Nil(t, cityRecord.LookUp(net.ParseIP("81.2.69.192")))
+	cityRecord, err := db.LookupCity(net.ParseIP("81.2.69.192"))
+	require.NoError(t, err, fmt.Sprintf("Error looking up city: %s", err))
 	assert.Equal(t, expectedCity, cityRecord)
-	assert.Error(t, cityRecord.LookUp(net.ParseIP("error")))
+	_, err = db.LookupCity(net.ParseIP("error"))
+	assert.Error(t, err)
 
-	asnRecord := &ASNRecord{}
-	assert.Nil(t, asnRecord.LookUp(net.ParseIP("82.99.17.64")))
+	asnRecord, err := db.LookupASN(net.ParseIP("82.99.17.64"))
+	require.NoError(t, err, fmt.Sprintf("Error looking up asn: %s", err))
 	assert.Equal(t, expectedASN, asnRecord)
-	assert.Error(t, asnRecord.LookUp(net.ParseIP("error")))
+	_, err = db.LookupASN(net.ParseIP("error"))
+	assert.Error(t, err)
 }

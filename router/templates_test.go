@@ -62,20 +62,22 @@ func TestDefaultTemplate(t *testing.T) {
 
 	tmpl, _ := template.New("home").Parse(home)
 	response := JSONResponse{
-		IP:              "127.0.0.1",
-		IPVersion:       4,
-		ClientPort:      "1000",
-		Country:         "A Country",
-		CountryCode:     "XX",
-		City:            "A City",
-		Latitude:        100,
-		Longitude:       -100,
-		PostalCode:      "00000",
-		TimeZone:        "My/Timezone",
-		ASN:             0,
-		ASNOrganization: "My ISP",
-		Host:            "localhost",
-		Headers:         req.Header,
+		IP:         "127.0.0.1",
+		IPVersion:  4,
+		ClientPort: "1000",
+		Host:       "localhost",
+		Headers:    req.Header,
+		GeoResponse: GeoResponse{
+			Country:         "A Country",
+			CountryCode:     "XX",
+			City:            "A City",
+			Latitude:        100,
+			Longitude:       -100,
+			PostalCode:      "00000",
+			TimeZone:        "My/Timezone",
+			ASN:             0,
+			ASNOrganization: "My ISP",
+		},
 	}
 
 	buf := &bytes.Buffer{}
