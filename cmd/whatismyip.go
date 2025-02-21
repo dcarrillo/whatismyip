@@ -23,10 +23,11 @@ import (
 
 func main() {
 	o, err := setting.Setup(os.Args[1:])
-	if err == flag.ErrHelp || err == setting.ErrVersion {
-		fmt.Print(o)
-		os.Exit(0)
-	} else if err != nil {
+	if err != nil {
+		if err == flag.ErrHelp || err == setting.ErrVersion {
+			fmt.Print(o)
+			os.Exit(0)
+		}
 		fmt.Println(err)
 		os.Exit(1)
 	}
@@ -44,9 +45,7 @@ func main() {
 
 	var geoSvc *service.Geo
 	if setting.App.GeodbPath.City != "" || setting.App.GeodbPath.ASN != "" {
-		var err error
-		geoSvc, err = service.NewGeo(context.Background(), setting.App.GeodbPath.City, setting.App.GeodbPath.ASN)
-		if err != nil {
+		if geoSvc, err = service.NewGeo(context.Background(), setting.App.GeodbPath.City, setting.App.GeodbPath.ASN); err != nil {
 			panic(err)
 		}
 	}
@@ -65,8 +64,7 @@ func setupEngine() *gin.Engine {
 		gin.SetMode(gin.ReleaseMode)
 	}
 	engine := gin.New()
-	engine.Use(gin.LoggerWithFormatter(httputils.GetLogFormatter))
-	engine.Use(gin.Recovery())
+	engine.Use(gin.LoggerWithFormatter(httputils.GetLogFormatter), gin.Recovery())
 	if setting.App.EnableSecureHeaders {
 		engine.Use(secure.New(secure.Config{
 			BrowserXssFilter:   true,
