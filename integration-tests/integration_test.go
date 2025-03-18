@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"strings"
 	"testing"
-	"time"
 
 	validator "github.com/dcarrillo/whatismyip/internal/validator/uuid"
 	"github.com/dcarrillo/whatismyip/router"
@@ -135,12 +134,7 @@ func TestContainerIntegration(t *testing.T) {
 					ContainerFilePath: "/resolver.yml",
 				},
 			},
-			WaitingFor: wait.ForAll(
-				wait.ForListeningPort("8000/tcp").WithStartupTimeout(5*time.Second),
-				wait.ForListeningPort("8001/tcp").WithStartupTimeout(5*time.Second),
-				wait.ForListeningPort("8001/udp").WithStartupTimeout(5*time.Second),
-				wait.ForListeningPort("53/udp").WithStartupTimeout(5*time.Second),
-			),
+			WaitingFor: wait.ForLog("Starting QUIC server"),
 			AutoRemove: true,
 		},
 		Started: true,

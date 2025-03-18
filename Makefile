@@ -50,10 +50,15 @@ endif
 
 docker-run: docker-build-dev
 	docker run --tty --interactive --rm \
-		--publish 8080:8080 \
-		--volume ${PWD}/test/GeoIP2-City-Test.mmdb:/GeoIP2-City-Test.mmdb \
-		--volume ${PWD}/test/GeoLite2-ASN-Test.mmdb:/GeoLite2-ASN-Test.mmdb \
+		--publish 8080:8080/tcp \
+		--publish 8081:8081/tcp \
+		--publish 8081:8081/udp \
+		--volume ${PWD}/test:/test \
 		${DOCKER_URL}:${VERSION} \
-		-geoip2-city /GeoIP2-City-Test.mmdb \
-		-geoip2-asn /GeoLite2-ASN-Test.mmdb \
-		-trusted-header X-Real-IP
+		-geoip2-city /test/GeoIP2-City-Test.mmdb \
+		-geoip2-asn /test/GeoLite2-ASN-Test.mmdb \
+		-trusted-header X-Real-PortReal-IP \
+		-tls-bind :8081 \
+		-tls-crt /test/server.pem \
+		-tls-key /test/server.key \
+		-enable-http3
