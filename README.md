@@ -14,7 +14,7 @@
   - [Usage](#usage)
   - [Examples](#examples)
     - [Run a default TCP server](#run-a-default-tcp-server)
-    - [Run a default TCP server with geo information enabled](#run-a-default-tco-server-with-geo-information-enabled)
+    - [Run a default TCP server with geo information enabled](#run-a-default-tcp-server-with-geo-information-enabled)
     - [Run a TLS (HTTP/2) and enable "what is my DNS" with geo information](#run-a-tls-http2-and-enable-what-is-my-dns-with-geo-information)
     - [Run an HTTP/3 server](#run-an-http3-server)
     - [Run a default TCP server with a custom template and trust a pair of custom headers set by an upstream proxy](#run-a-default-tcp-server-with-a-custom-template-and-trust-a-pair-of-custom-headers-set-by-an-upstream-proxy)
@@ -24,13 +24,13 @@
     - [From Docker Hub](#from-docker-hub)
 
 > [!NOTE]
-> Since version 3.0.0, geodb database is not mandatory, not adding the flags will disable the geo feature.
-> Since version 2.3.0, the application includes an optional client [DNS discovery](#dns-discovery)
+> Since version 3.0.0, the geodb database is not mandatory; not adding the flags will disable the geo feature.
+> Since version 2.3.0, the application includes an optional client [DNS discovery](#dns-discovery) feature.
 
-Just another "what is my IP address" service, including geolocation, TCP open port checking, and headers information. Written in go with high performance in mind,
-it uses [gin](https://github.com/gin-gonic/gin) which uses [httprouter](https://github.com/julienschmidt/httprouter) a lightweight high performance HTTP multiplexer.
+Just another "what is my IP address" service, including geolocation, TCP open port checking, and headers information. Written in Go with high performance in mind,
+it uses [gin](https://github.com/gin-gonic/gin) which uses [httprouter](https://github.com/julienschmidt/httprouter), a lightweight high-performance HTTP multiplexer.
 
-Take a look at [ifconfig.es](https://ifconfig.es) a live site using `whatismyip` and the `DNS discovery` enabled.
+Take a look at [ifconfig.es](https://ifconfig.es), a live site using `whatismyip` with the `DNS discovery` feature enabled.
 
 Get your public IP easily from the command line:
 
@@ -87,7 +87,7 @@ curl -L dns.ifconfig.es
 
 ## DNS discovery
 
-The DNS discovery works by forcing the client to make a request to `<uuid>.dns.ifconfig.es` this DNS request is handled by a microdns server
+The DNS discovery works by forcing the client to make a request to `<uuid>.dns.ifconfig.es`. This DNS request is handled by a microdns server
 included in the `whatismyip` binary. In order to run the discovery server, a configuration file in the following form has to be created:
 
 ```yaml
