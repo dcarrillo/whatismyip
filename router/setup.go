@@ -24,7 +24,9 @@ func SetupTemplate(r *gin.Engine) {
 func Setup(r *gin.Engine, geo *service.Geo) {
 	geoSvc = geo
 	r.GET("/", getRoot)
-	r.GET("/scan/tcp/:port", scanTCPPort)
+	if !setting.App.DisableTCPScan {
+		r.GET("/scan/tcp/:port", scanTCPPort)
+	}
 	r.GET("/client-port", getClientPortAsString)
 	r.GET("/geo", getGeoAsString)
 	r.GET("/geo/:field", getGeoAsString)

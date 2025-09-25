@@ -41,6 +41,7 @@ type settings struct {
 	TrustedPortHeader   string
 	EnableSecureHeaders bool
 	EnableHTTP3         bool
+	DisableTCPScan      bool
 	Server              serverSettings
 	Resolver            resolver
 	version             bool
@@ -97,6 +98,12 @@ func Setup(args []string) (output string, err error) {
 		"trusted-port-header",
 		"",
 		"Trusted request header for remote client port (e.g. X-Real-Port). When this parameter is set -trusted-header becomes mandatory",
+	)
+	flags.BoolVar(
+		&App.DisableTCPScan,
+		"disable-scan",
+		false,
+		"Disable TCP port scanning functionality",
 	)
 	flags.BoolVar(&App.version, "version", false, "Output version information and exit")
 	flags.BoolVar(
