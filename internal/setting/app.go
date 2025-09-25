@@ -99,12 +99,6 @@ func Setup(args []string) (output string, err error) {
 		"",
 		"Trusted request header for remote client port (e.g. X-Real-Port). When this parameter is set -trusted-header becomes mandatory",
 	)
-	flags.BoolVar(
-		&App.DisableTCPScan,
-		"disable-scan",
-		false,
-		"Disable TCP port scanning functionality",
-	)
 	flags.BoolVar(&App.version, "version", false, "Output version information and exit")
 	flags.BoolVar(
 		&App.EnableSecureHeaders,
@@ -117,6 +111,12 @@ func Setup(args []string) (output string, err error) {
 		"enable-http3",
 		false,
 		"Enable HTTP/3 protocol. HTTP/3 requires --tls-bind set, as HTTP/3 starts as a TLS connection that then gets upgraded to UDP. The UDP port is the same as the one used for the TLS server.",
+	)
+	flags.BoolVar(
+		&App.DisableTCPScan,
+		"disable-scan",
+		false,
+		"Disable TCP port scanning functionality",
 	)
 
 	err = flags.Parse(args)
