@@ -78,6 +78,17 @@ func TestParseFlags(t *testing.T) {
 			},
 		},
 		{
+			[]string{"-disable-scan"},
+			settings{
+				BindAddress: ":8080",
+				Server: serverSettings{
+					ReadTimeout:  10 * time.Second,
+					WriteTimeout: 10 * time.Second,
+				},
+				DisableTCPScan: true,
+			},
+		},
+		{
 			[]string{"-bind", ":8001", "-geoip2-city", "/city-path", "-geoip2-asn", "/asn-path"},
 			settings{
 				GeodbPath: geodbConf{

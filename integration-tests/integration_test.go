@@ -235,6 +235,70 @@ func TestContainerIntegration(t *testing.T) {
 	testWhatIsMyDNS(t)
 }
 
+// TODO If other flags like this one are implemented we should think of a better approach
+func TestContainerIntegrationDisableScan(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skiping integration tests")
+	}
+
+	ctx := context.Background()
+	c, err := tc.GenericContainer(ctx, tc.GenericContainerRequest{
+		ContainerRequest: tc.ContainerRequest{
+			FromDockerfile: tc.FromDockerfile{
+				Context:       "../",
+				Dockerfile:    "./test/Dockerfile",
+				PrintBuildLog: true,
+				KeepImage:     false,
+				BuildOptionsModifier: func(buildOptions *types.ImageBuildOptions) {
+					buildOptions.Target = "test"
+				},
+			},
+			ExposedPorts: []string{
+				"8000:8000",
+			},
+			Cmd: []string{
+				"-geoip2-city", "/GeoIP2-City-Test.mmdb",
+				"-geoip2-asn", "/GeoLite2-ASN-Test.mmdb",
+				"-bind", ":8000",
+				"-trusted-header", "X-Real-IP",
+				"-enable-secure-headers",
+				"-disable-scan",
+			},
+			Files: []tc.ContainerFile{
+				{
+					HostFilePath:      "./../test/GeoIP2-City-Test.mmdb",
+					ContainerFilePath: "/GeoIP2-City-Test.mmdb",
+				},
+				{
+					HostFilePath:      "./../test/GeoLite2-ASN-Test.mmdb",
+					ContainerFilePath: "/GeoLite2-ASN-Test.mmdb",
+				},
+			},
+			WaitingFor: wait.ForLog("Starting TCP server"),
+			AutoRemove: true,
+		},
+		Started: true,
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() { c.Terminate(ctx) })
+
+	t.Run("RequestScanEndpointWithDisabledScan", func(t *testing.T) {
+		req, err := http.NewRequest("GET", "http://localhost:8000/scan/tcp/8000", nil)
+		assert.NoError(t, err)
+		req.Header.Set("Accept", "application/json")
+		req.Header.Set("X-Real-IP", "127.0.0.1")
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+
+		body, err := io.ReadAll(resp.Body)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, body)
+	})
+}
+
 func doQuicRequest(req *http.Request) (*http.Response, []byte, error) {
 	roundTripper := &http3.Transport{
 		TLSClientConfig: &tls.Config{
