@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/dcarrillo/whatismyip/internal/httputils"
+	"github.com/dcarrillo/whatismyip/internal/metrics"
 	"github.com/dcarrillo/whatismyip/internal/setting"
 	"github.com/dcarrillo/whatismyip/resolver"
 	"github.com/dcarrillo/whatismyip/server"
@@ -54,6 +55,11 @@ func main() {
 	router.Setup(engine, geoSvc)
 	servers = slices.Concat(servers, setupHTTPServers(context.Background(), engine.Handler()))
 
+	if setting.App.PrometheusAddress != "" {
+		prometheusServer := server.NewPrometheusServer(context.Background())
+		servers = append(servers, prometheusServer)
+	}
+
 	whatismyip := server.Setup(servers, geoSvc)
 	whatismyip.Run()
 }
@@ -65,6 +71,10 @@ func setupEngine() *gin.Engine {
 	}
 	engine := gin.New()
 	engine.Use(gin.LoggerWithFormatter(httputils.GetLogFormatter), gin.Recovery())
+	if setting.App.PrometheusAddress != "" {
+		metrics.Enable()
+		engine.Use(metrics.GinMiddleware())
+	}
 	if setting.App.EnableSecureHeaders {
 		engine.Use(secure.New(secure.Config{
 			BrowserXssFilter:   true,

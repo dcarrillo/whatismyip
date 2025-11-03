@@ -52,6 +52,7 @@ docker-run: docker-build-dev
 	docker run --tty --interactive --rm \
 		--publish 8080:8080/tcp \
 		--publish 8081:8081/tcp \
+		--publish 9100:9100/tcp \
 		--publish 8081:8081/udp \
 		--volume ${PWD}/test:/test \
 		${DOCKER_URL}:${VERSION} \
@@ -61,4 +62,5 @@ docker-run: docker-build-dev
 		-tls-bind :8081 \
 		-tls-crt /test/server.pem \
 		-tls-key /test/server.key \
-		-enable-http3
+		-enable-http3 \
+		-metrics-bind :9100

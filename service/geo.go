@@ -6,6 +6,7 @@ import (
 	"net"
 	"sync"
 
+	"github.com/dcarrillo/whatismyip/internal/metrics"
 	"github.com/dcarrillo/whatismyip/models"
 )
 
@@ -41,6 +42,7 @@ func (g *Geo) LookUpCity(ip net.IP) *models.GeoRecord {
 		return nil
 	}
 
+	metrics.RecordGeoLookup("city")
 	return record
 }
 
@@ -51,6 +53,7 @@ func (g *Geo) LookUpASN(ip net.IP) *models.ASNRecord {
 		return nil
 	}
 
+	metrics.RecordGeoLookup("asn")
 	return record
 }
 

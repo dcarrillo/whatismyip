@@ -5,6 +5,7 @@ import (
 	"net"
 	"strings"
 
+	"github.com/dcarrillo/whatismyip/internal/metrics"
 	"github.com/dcarrillo/whatismyip/internal/setting"
 	"github.com/dcarrillo/whatismyip/internal/validator/uuid"
 	"github.com/miekg/dns"
@@ -59,6 +60,7 @@ func (rsv *Resolver) blackHole(w dns.ResponseWriter, r *dns.Msg) {
 	msg.SetRcode(r, dns.RcodeRefused)
 	w.WriteMsg(msg)
 	logger(w, r.Question[0], msg.Rcode)
+	metrics.RecordDNSQuery(dns.TypeToString[r.Question[0].Qtype], dns.RcodeToString[msg.Rcode])
 }
 
 func (rsv *Resolver) resolve(w dns.ResponseWriter, r *dns.Msg) {
@@ -78,6 +80,7 @@ func (rsv *Resolver) resolve(w dns.ResponseWriter, r *dns.Msg) {
 				logger(w, q, msg.Rcode)
 			}
 			w.WriteMsg(msg)
+			metrics.RecordDNSQuery(dns.TypeToString[q.Qtype], dns.RcodeToString[msg.Rcode])
 			return
 		}
 	}
@@ -96,6 +99,7 @@ func (rsv *Resolver) resolve(w dns.ResponseWriter, r *dns.Msg) {
 
 	w.WriteMsg(msg)
 	logger(w, q, msg.Rcode)
+	metrics.RecordDNSQuery(dns.TypeToString[q.Qtype], dns.RcodeToString[msg.Rcode])
 }
 
 func (rsv *Resolver) getIP(question dns.Question, msg *dns.Msg) int {

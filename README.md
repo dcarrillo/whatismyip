@@ -6,25 +6,27 @@
 [![GitHub release](https://img.shields.io/github/release/dcarrillo/whatismyip.svg)](https://github.com/dcarrillo/whatismyip/releases/)
 [![License Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](./LICENSE)
 
-- [What is my IP address](#what-is-my-ip-address)
-  - [Features](#features)
-  - [Endpoints](#endpoints)
-  - [DNS discovery](#dns-discovery)
-  - [Build](#build)
-  - [Usage](#usage)
-  - [Examples](#examples)
-    - [Run a default TCP server](#run-a-default-tcp-server)
-    - [Run a default TCP server with geo information enabled](#run-a-default-tcp-server-with-geo-information-enabled)
-    - [Run a TLS (HTTP/2) and enable "what is my DNS" with geo information](#run-a-tls-http2-and-enable-what-is-my-dns-with-geo-information)
-    - [Run an HTTP/3 server](#run-an-http3-server)
-    - [Run a default TCP server with a custom template and trust a pair of custom headers set by an upstream proxy](#run-a-default-tcp-server-with-a-custom-template-and-trust-a-pair-of-custom-headers-set-by-an-upstream-proxy)
-  - [Download](#download)
-  - [Docker](#docker)
-    - [Run a container locally using test databases](#run-a-container-locally-using-test-databases)
-    - [From Docker Hub](#from-docker-hub)
+- [Features](#features)
+- [Endpoints](#endpoints)
+- [DNS discovery](#dns-discovery)
+- [Build](#build)
+- [Usage](#usage)
+- [Examples](#examples)
+  - [Run a default TCP server](#run-a-default-tcp-server)
+  - [Run a default TCP server with geo information enabled](#run-a-default-tcp-server-with-geo-information-enabled)
+  - [Run a TLS (HTTP/2) and enable "what is my DNS" with geo information](#run-a-tls-http2-and-enable-what-is-my-dns-with-geo-information)
+  - [Run an HTTP/3 server](#run-an-http3-server)
+  - [Run a default TCP server with a custom template and trust a pair of custom headers set by an upstream proxy](#run-a-default-tcp-server-with-a-custom-template-and-trust-a-pair-of-custom-headers-set-by-an-upstream-proxy)
+- [Download](#download)
+- [Docker](#docker)
+  - [Run a container locally using test databases](#run-a-container-locally-using-test-databases)
+  - [From Docker Hub](#from-docker-hub)
 
 > [!NOTE]
+> Since version 3.2.0, an optional prometheus metrics endpoint is available.
+>
 > Since version 3.0.0, the geodb database is not mandatory; not adding the flags will disable the geo feature.
+>
 > Since version 2.3.0, the application includes an optional client [DNS discovery](#dns-discovery) feature.
 
 Just another "what is my IP address" service, including geolocation, TCP open port checking, and headers information. Written in Go with high performance in mind,
@@ -53,12 +55,13 @@ curl -L dns.ifconfig.es
 
 - TLS and HTTP/2.
 - Experimental HTTP/3 support. HTTP/3 requires a TLS server running (`-tls-bind`), as HTTP/3 starts as a TLS connection that then gets upgraded to UDP. The UDP port is the same as the one used for the TLS server.
-- Beta DNS discovery: A best-effort approach to discovering the DNS server that is resolving the client's requests.
+- DNS discovery: A best-effort approach to discovering the DNS server that is resolving the client's requests.
 - Can run behind a proxy by trusting a custom header (usually `X-Real-IP`) to figure out the source IP address. It also supports a custom header to resolve the client port, if the proxy can only add a header for the IP (for example a fixed header from CDNs) the client port is shown as unknown.
 - IPv4 and IPv6.
 - Geolocation info including ASN. This feature is possible thanks to [maxmind](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data?lang=en) GeoLite2 databases. In order to use these databases, a license key is needed. Please visit Maxmind site for further instructions and get a free license.
 - Checking TCP open ports.
 - High performance.
+- Prometheus metrics endpoint: Exports metrics (on a separete process/port) for HTTP requests, request duration, geo lookups, port scans, and DNS queries.
 - Self-contained server that can reload GeoLite2 databases and/or SSL certificates without stop/start. The `hup` signal is honored.
 - HTML templates for the landing page.
 - Text plain and JSON output.
@@ -117,7 +120,7 @@ curl $(cat /proc/sys/kernel/random/uuid).dns.ifconfig.es
 
 ## Build
 
-Golang >= 1.22 is required.
+Golang >= 1.24 is required.
 
 `make build`
 
@@ -126,33 +129,35 @@ Golang >= 1.22 is required.
 ```text
 Usage of whatismyip:
   -bind string
-   	Listening address (see https://pkg.go.dev/net?#Listen) (default ":8080")
+    Listening address (see https://pkg.go.dev/net?#Listen) (default ":8080")
   -disable-scan
-   	Disable TCP port scanning functionality
+    Disable TCP port scanning functionality
   -enable-http3
-   	Enable HTTP/3 protocol. HTTP/3 requires --tls-bind set, as HTTP/3 starts as a TLS connection that then gets upgraded to UDP. The UDP port is the same as the one used for the TLS server.
+    Enable HTTP/3 protocol. HTTP/3 requires --tls-bind set, as HTTP/3 starts as a TLS connection that then gets upgraded to UDP. The UDP port is the same as the one used for the TLS server.
   -enable-secure-headers
-   	Add sane security-related headers to every response
+    Add sane security-related headers to every response
   -geoip2-asn string
-   	Path to GeoIP2 ASN database. Enables ASN information. (--geoip2-city becomes mandatory)
+    Path to GeoIP2 ASN database. Enables ASN information. (--geoip2-city becomes mandatory)
   -geoip2-city string
-   	Path to GeoIP2 city database. Enables geo information (--geoip2-asn becomes mandatory)
+    Path to GeoIP2 city database. Enables geo information (--geoip2-asn becomes mandatory)
+  -metrics-bind string
+    Listening address for Prometheus metrics endpoint (see https://pkg.go.dev/net?#Listen). It enables the metrics available at the given address/port via the /metrics endpoint.
   -resolver string
-   	Path to the resolver configuration. It actually enables the resolver for DNS client discovery.
+    Path to the resolver configuration. It actually enables the resolver for DNS client discovery.
   -template string
-   	Path to the template file
+    Path to the template file
   -tls-bind string
-   	Listening address for TLS (see https://pkg.go.dev/net?#Listen)
+    Listening address for TLS (see https://pkg.go.dev/net?#Listen)
   -tls-crt string
-   	When using TLS, path to certificate file
+    When using TLS, path to certificate file
   -tls-key string
-   	When using TLS, path to private key file
+    When using TLS, path to private key file
   -trusted-header string
-   	Trusted request header for remote IP (e.g. X-Real-IP). When using this feature if -trusted-port-header is not set the client port is shown as 'unknown'
+    Trusted request header for remote IP (e.g. X-Real-IP). When using this feature if -trusted-port-header is not set the client port is shown as 'unknown'
   -trusted-port-header string
-   	Trusted request header for remote client port (e.g. X-Real-Port). When this parameter is set -trusted-header becomes mandatory
+    Trusted request header for remote client port (e.g. X-Real-Port). When this parameter is set -trusted-header becomes mandatory
   -version
-   	Output version information and exit
+    Output version information and exit
 ```
 
 ## Examples
@@ -197,7 +202,7 @@ Download the latest version from [github](https://github.com/dcarrillo/whatismyi
 
 ## Docker
 
-An ultra-light (~4MB) image is available on [docker hub](https://hub.docker.com/r/dcarrillo/whatismyip). Since version `2.1.2`, the binary is compressed using [upx](https://github.com/upx/upx).
+An ultra-light (~6MB) image is available on [docker hub](https://hub.docker.com/r/dcarrillo/whatismyip). Since version `2.1.2`, the binary is compressed using [upx](https://github.com/upx/upx).
 
 ### Run a container locally using test databases
 
