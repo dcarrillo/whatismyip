@@ -37,6 +37,7 @@ type settings struct {
 	TLSAddress          string
 	TLSCrtPath          string
 	TLSKeyPath          string
+	PrometheusAddress   string
 	TrustedHeader       string
 	TrustedPortHeader   string
 	EnableSecureHeaders bool
@@ -87,6 +88,12 @@ func Setup(args []string) (output string, err error) {
 	)
 	flags.StringVar(&App.TLSCrtPath, "tls-crt", "", "When using TLS, path to certificate file")
 	flags.StringVar(&App.TLSKeyPath, "tls-key", "", "When using TLS, path to private key file")
+	flags.StringVar(
+		&App.PrometheusAddress,
+		"metrics-bind",
+		"",
+		"Listening address for Prometheus metrics endpoint (see https://pkg.go.dev/net?#Listen). It enables the metrics available at the given address/port via the /metrics endpoint.",
+	)
 	flags.StringVar(
 		&App.TrustedHeader,
 		"trusted-header",

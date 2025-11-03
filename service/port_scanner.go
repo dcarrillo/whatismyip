@@ -3,6 +3,8 @@ package service
 import (
 	"net"
 	"time"
+
+	"github.com/dcarrillo/whatismyip/internal/metrics"
 )
 
 const scannerTimeOut = 3 * time.Second
@@ -20,5 +22,6 @@ func (p *PortScanner) IsPortOpen() (bool, error) {
 		defer conn.Close()
 	}
 
+	metrics.RecordPortScan()
 	return true, nil
 }

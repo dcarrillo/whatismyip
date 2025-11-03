@@ -98,6 +98,7 @@ func TestContainerIntegration(t *testing.T) {
 				"8000:8000",
 				"8001:8001",
 				"8001:8001/udp",
+				"9100:9100",
 				"53531:53/udp",
 			},
 			Cmd: []string{
@@ -110,6 +111,7 @@ func TestContainerIntegration(t *testing.T) {
 				"-trusted-header", "X-Real-IP",
 				"-enable-secure-headers",
 				"-enable-http3",
+				"-metrics-bind", ":9100",
 				"-resolver", "/resolver.yml",
 			},
 			Files: []tc.ContainerFile{
@@ -231,6 +233,25 @@ func TestContainerIntegration(t *testing.T) {
 			assert.Equal(t, tt.want, j.Reachable)
 		})
 	}
+
+	t.Run("RequestMetricsEndpoint", func(t *testing.T) {
+		req, err := http.NewRequest("GET", "http://localhost:9100/metrics", nil)
+		assert.NoError(t, err)
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		body, err := io.ReadAll(resp.Body)
+		assert.NoError(t, err)
+		bodyStr := string(body)
+
+		assert.Contains(t, bodyStr, "whatismyip_http_requests_total")
+		assert.Contains(t, bodyStr, "whatismyip_http_request_duration_seconds")
+		assert.Contains(t, bodyStr, "# HELP")
+		assert.Contains(t, bodyStr, "# TYPE")
+	})
 
 	testWhatIsMyDNS(t)
 }
