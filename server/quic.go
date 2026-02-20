@@ -3,9 +3,9 @@ package server
 import (
 	"context"
 	"errors"
-	"log"
 	"net/http"
 
+	"github.com/dcarrillo/whatismyip/internal/logger"
 	"github.com/dcarrillo/whatismyip/internal/setting"
 	"github.com/quic-go/quic-go/http3"
 )
@@ -32,24 +32,24 @@ func (q *Quic) Start() {
 	parentHandler := q.tlsServer.server.Handler
 	q.tlsServer.server.Handler = http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if err := q.server.SetQUICHeaders(rw.Header()); err != nil {
-			log.Fatal(err)
+			logger.Error("Failed to set QUIC headers", "error", err)
 		}
 
 		parentHandler.ServeHTTP(rw, req)
 	})
 
-	log.Printf("Starting QUIC server listening on %s (udp)", setting.App.TLSAddress)
+	logger.Info("Starting QUIC server", "address", setting.App.TLSAddress, "protocol", "udp")
 	go func() {
 		if err := q.server.ListenAndServeTLS(setting.App.TLSCrtPath, setting.App.TLSKeyPath); err != nil &&
 			!errors.Is(err, http.ErrServerClosed) {
-			log.Fatal(err)
+			logger.Error("QUIC server error", "error", err)
 		}
 	}()
 }
 
 func (q *Quic) Stop() {
-	log.Print("Stopping QUIC server...")
+	logger.Info("Stopping QUIC server")
 	if err := q.server.Close(); err != nil {
-		log.Print("QUIC server forced to shutdown")
+		logger.Error("QUIC server forced to shutdown", "error", err)
 	}
 }

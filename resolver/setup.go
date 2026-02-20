@@ -1,10 +1,10 @@
 package resolver
 
 import (
-	"log"
 	"net"
 	"strings"
 
+	"github.com/dcarrillo/whatismyip/internal/logger"
 	"github.com/dcarrillo/whatismyip/internal/metrics"
 	"github.com/dcarrillo/whatismyip/internal/setting"
 	"github.com/dcarrillo/whatismyip/internal/validator/uuid"
@@ -59,7 +59,7 @@ func (rsv *Resolver) blackHole(w dns.ResponseWriter, r *dns.Msg) {
 	msg := startReply(r)
 	msg.SetRcode(r, dns.RcodeRefused)
 	w.WriteMsg(msg)
-	logger(w, r.Question[0], msg.Rcode)
+	logDNSQuery(w, r.Question[0], msg.Rcode)
 	metrics.RecordDNSQuery(dns.TypeToString[r.Question[0].Qtype], dns.RcodeToString[msg.Rcode])
 }
 
@@ -74,10 +74,10 @@ func (rsv *Resolver) resolve(w dns.ResponseWriter, r *dns.Msg) {
 			brr, err := buildRR(rsv.domain + " " + res)
 			if err != nil {
 				msg.SetRcode(r, dns.RcodeServerFailure)
-				logger(w, q, msg.Rcode, err.Error())
+				logDNSQuery(w, q, msg.Rcode, err.Error())
 			} else {
 				msg.Answer = append(msg.Answer, brr)
-				logger(w, q, msg.Rcode)
+				logDNSQuery(w, q, msg.Rcode)
 			}
 			w.WriteMsg(msg)
 			metrics.RecordDNSQuery(dns.TypeToString[q.Qtype], dns.RcodeToString[msg.Rcode])
@@ -98,7 +98,7 @@ func (rsv *Resolver) resolve(w dns.ResponseWriter, r *dns.Msg) {
 	}
 
 	w.WriteMsg(msg)
-	logger(w, q, msg.Rcode)
+	logDNSQuery(w, q, msg.Rcode)
 	metrics.RecordDNSQuery(dns.TypeToString[q.Qtype], dns.RcodeToString[msg.Rcode])
 }
 
@@ -152,18 +152,16 @@ func startReply(r *dns.Msg) *dns.Msg {
 	return msg
 }
 
-func logger(w dns.ResponseWriter, q dns.Question, code int, err ...string) {
-	emsg := ""
-	if len(err) > 0 {
-		emsg = " - " + strings.Join(err, " ")
-	}
+func logDNSQuery(w dns.ResponseWriter, q dns.Question, code int, err ...string) {
 	ip, _, _ := net.SplitHostPort(w.RemoteAddr().String())
-	log.Printf(
-		"DNS %s - %s - %s - %s%s",
-		ip,
-		dns.TypeToString[q.Qtype],
-		q.Name,
-		dns.RcodeToString[code],
-		emsg,
-	)
+	args := []any{
+		"ip", ip,
+		"type", dns.TypeToString[q.Qtype],
+		"name", q.Name,
+		"rcode", dns.RcodeToString[code],
+	}
+	if len(err) > 0 {
+		args = append(args, "error", strings.Join(err, " "))
+	}
+	logger.Info("DNS query", args...)
 }

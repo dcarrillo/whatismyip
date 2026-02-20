@@ -2,9 +2,9 @@ package server
 
 import (
 	"context"
-	"log"
 	"strconv"
 
+	"github.com/dcarrillo/whatismyip/internal/logger"
 	"github.com/miekg/dns"
 )
 
@@ -32,17 +32,17 @@ func (d *DNS) Start() {
 		// ReusePort: true,
 	}
 
-	log.Printf("Starting DNS server listening on :%d (udp)", port)
+	logger.Info("Starting DNS server", "protocol", "udp", "port", port)
 	go func() {
 		if err := d.server.ListenAndServe(); err != nil {
-			log.Fatal(err)
+			logger.Error("DNS server error", "error", err)
 		}
 	}()
 }
 
 func (d *DNS) Stop() {
-	log.Print("Stopping DNS server...")
+	logger.Info("Stopping DNS server")
 	if err := d.server.Shutdown(); err != nil {
-		log.Printf("DNS server forced to shutdown: %s", err)
+		logger.Error("DNS server forced to shutdown", "error", err)
 	}
 }

@@ -2,8 +2,8 @@ package router
 
 import (
 	"html/template"
-	"log"
 
+	"github.com/dcarrillo/whatismyip/internal/logger"
 	"github.com/dcarrillo/whatismyip/internal/setting"
 	"github.com/dcarrillo/whatismyip/service"
 	"github.com/gin-gonic/gin"
@@ -16,7 +16,7 @@ func SetupTemplate(r *gin.Engine) {
 		t, _ := template.New("home").Parse(home)
 		r.SetHTMLTemplate(t)
 	} else {
-		log.Printf("Template %s has been loaded", setting.App.TemplatePath)
+		logger.Info("Template loaded", "path", setting.App.TemplatePath)
 		r.LoadHTMLFiles(setting.App.TemplatePath)
 	}
 }

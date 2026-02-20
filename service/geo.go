@@ -2,10 +2,10 @@ package service
 
 import (
 	"context"
-	"log"
 	"net"
 	"sync"
 
+	"github.com/dcarrillo/whatismyip/internal/logger"
 	"github.com/dcarrillo/whatismyip/internal/metrics"
 	"github.com/dcarrillo/whatismyip/models"
 )
@@ -38,7 +38,7 @@ func NewGeo(ctx context.Context, cityPath string, asnPath string) (*Geo, error) 
 func (g *Geo) LookUpCity(ip net.IP) *models.GeoRecord {
 	record, err := g.db.LookupCity(ip)
 	if err != nil {
-		log.Print(err)
+		logger.Error("Failed to lookup city", "error", err)
 		return nil
 	}
 
@@ -49,7 +49,7 @@ func (g *Geo) LookUpCity(ip net.IP) *models.GeoRecord {
 func (g *Geo) LookUpASN(ip net.IP) *models.ASNRecord {
 	record, err := g.db.LookupASN(ip)
 	if err != nil {
-		log.Print(err)
+		logger.Error("Failed to lookup ASN", "error", err)
 		return nil
 	}
 
@@ -64,7 +64,7 @@ func (g *Geo) Shutdown() {
 
 func (g *Geo) Reload() {
 	if err := g.ctx.Err(); err != nil {
-		log.Printf("Skipping reload, service is shutting down: %v", err)
+		logger.Warn("Skipping reload, service is shutting down", "error", err)
 		return
 	}
 
@@ -72,5 +72,5 @@ func (g *Geo) Reload() {
 	defer g.mu.Unlock()
 
 	g.db.Reload()
-	log.Print("Geo database reloaded")
+	logger.Info("Geo database reloaded")
 }

@@ -30,6 +30,12 @@ type resolver struct {
 	Ipv6            []string `yaml:"ipv6,omitempty"`
 }
 
+type logSettings struct {
+	Level     string
+	JSON      bool
+	RequestID bool
+}
+
 type settings struct {
 	GeodbPath           geodbConf
 	TemplatePath        string
@@ -45,6 +51,7 @@ type settings struct {
 	DisableTCPScan      bool
 	Server              serverSettings
 	Resolver            resolver
+	Log                 logSettings
 	version             bool
 }
 
@@ -53,10 +60,14 @@ const defaultAddress = ":8080"
 var ErrVersion = errors.New("setting: version requested")
 
 var App = settings{
-	// hard-coded for the time being
 	Server: serverSettings{
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
+	},
+	Log: logSettings{
+		Level:     "info",
+		JSON:      false,
+		RequestID: false,
 	},
 }
 
@@ -125,6 +136,24 @@ func Setup(args []string) (output string, err error) {
 		false,
 		"Disable TCP port scanning functionality",
 	)
+	flags.StringVar(
+		&App.Log.Level,
+		"log-level",
+		"info",
+		"Log level: debug, info, warn, error",
+	)
+	flags.BoolVar(
+		&App.Log.JSON,
+		"log-json",
+		false,
+		"Output logs in JSON format",
+	)
+	flags.BoolVar(
+		&App.Log.RequestID,
+		"log-request-id",
+		false,
+		"Enable request ID logging for HTTP requests",
+	)
 
 	err = flags.Parse(args)
 	if err != nil {
@@ -133,6 +162,11 @@ func Setup(args []string) (output string, err error) {
 
 	if App.version {
 		return fmt.Sprintf("whatismyip version %s", core.Version), ErrVersion
+	}
+
+	validLogLevels := map[string]bool{"debug": true, "info": true, "warn": true, "error": true}
+	if !validLogLevels[App.Log.Level] {
+		return "", fmt.Errorf("invalid log level: %s (must be one of: debug, info, warn, error)", App.Log.Level)
 	}
 
 	if (App.GeodbPath.City != "" && App.GeodbPath.ASN == "") || (App.GeodbPath.City == "" && App.GeodbPath.ASN != "") {

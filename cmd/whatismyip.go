@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/dcarrillo/whatismyip/internal/httputils"
+	"github.com/dcarrillo/whatismyip/internal/logger"
 	"github.com/dcarrillo/whatismyip/internal/metrics"
 	"github.com/dcarrillo/whatismyip/internal/setting"
 	"github.com/dcarrillo/whatismyip/resolver"
@@ -32,6 +33,9 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+
+	logger.Setup(logger.Level(setting.App.Log.Level), setting.App.Log.JSON)
+	logger.Info("Starting whatismyip", "version", "1.0.0")
 
 	servers := []server.Server{}
 	engine := setupEngine()
@@ -71,6 +75,10 @@ func setupEngine() *gin.Engine {
 	}
 	engine := gin.New()
 	engine.Use(gin.LoggerWithFormatter(httputils.GetLogFormatter), gin.Recovery())
+	if setting.App.Log.RequestID {
+		engine.Use(httputils.RequestIDMiddleware())
+		engine.Use(httputils.RequestIDLogger())
+	}
 	if setting.App.PrometheusAddress != "" {
 		metrics.Enable()
 		engine.Use(metrics.GinMiddleware())

@@ -3,9 +3,9 @@ package server
 import (
 	"context"
 	"errors"
-	"log"
 	"net/http"
 
+	"github.com/dcarrillo/whatismyip/internal/logger"
 	"github.com/dcarrillo/whatismyip/internal/setting"
 )
 
@@ -30,17 +30,17 @@ func (t *TCP) Start() {
 		WriteTimeout: setting.App.Server.WriteTimeout,
 	}
 
-	log.Printf("Starting TCP server listening on %s", setting.App.BindAddress)
+	logger.Info("Starting TCP server", "address", setting.App.BindAddress)
 	go func() {
 		if err := t.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatal(err)
+			logger.Error("TCP server error", "error", err)
 		}
 	}()
 }
 
 func (t *TCP) Stop() {
-	log.Print("Stopping TCP server...")
+	logger.Info("Stopping TCP server")
 	if err := t.server.Shutdown(t.ctx); err != nil {
-		log.Printf("TCP server forced to shutdown: %s", err)
+		logger.Error("TCP server forced to shutdown", "error", err)
 	}
 }

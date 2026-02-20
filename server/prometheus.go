@@ -3,9 +3,9 @@ package server
 import (
 	"context"
 	"errors"
-	"log"
 	"net/http"
 
+	"github.com/dcarrillo/whatismyip/internal/logger"
 	"github.com/dcarrillo/whatismyip/internal/setting"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -32,17 +32,17 @@ func (p *Prometheus) Start() {
 		WriteTimeout: setting.App.Server.WriteTimeout,
 	}
 
-	log.Printf("Starting Prometheus server listening on %s", setting.App.PrometheusAddress)
+	logger.Info("Starting Prometheus server", "address", setting.App.PrometheusAddress)
 	go func() {
 		if err := p.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatal(err)
+			logger.Error("Prometheus server error", "error", err)
 		}
 	}()
 }
 
 func (p *Prometheus) Stop() {
-	log.Print("Stopping Prometheus server...")
+	logger.Info("Stopping Prometheus server")
 	if err := p.server.Shutdown(p.ctx); err != nil {
-		log.Printf("Prometheus server forced to shutdown: %s", err)
+		logger.Error("Prometheus server forced to shutdown", "error", err)
 	}
 }

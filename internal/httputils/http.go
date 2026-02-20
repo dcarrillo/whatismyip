@@ -7,8 +7,10 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/dcarrillo/whatismyip/internal/logger"
 	"github.com/dcarrillo/whatismyip/internal/setting"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 // HeadersToSortedString shorts and dumps http.Header to a string separated by \n
@@ -77,4 +79,30 @@ func normalizeLog(log any) any {
 	}
 
 	return log
+}
+
+const RequestIDHeader = "X-Request-ID"
+
+func RequestIDMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		reqID := c.GetHeader(RequestIDHeader)
+		if reqID == "" {
+			reqID = uuid.New().String()
+		}
+		c.Set("requestID", reqID)
+		c.Header(RequestIDHeader, reqID)
+		c.Next()
+	}
+}
+
+func RequestIDLogger() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		reqID, exists := c.Get("requestID")
+		if !exists {
+			reqID = "-"
+		}
+		log := logger.With("requestID", reqID)
+		c.Set("logger", log)
+		c.Next()
+	}
 }

@@ -63,6 +63,11 @@ func TestParseMandatoryFlags(t *testing.T) {
 }
 
 func TestParseFlags(t *testing.T) {
+	defaultLogSettings := logSettings{
+		Level:     "info",
+		JSON:      false,
+		RequestID: false,
+	}
 	flags := []struct {
 		args []string
 		conf settings
@@ -75,6 +80,7 @@ func TestParseFlags(t *testing.T) {
 					ReadTimeout:  10 * time.Second,
 					WriteTimeout: 10 * time.Second,
 				},
+				Log: defaultLogSettings,
 			},
 		},
 		{
@@ -86,6 +92,7 @@ func TestParseFlags(t *testing.T) {
 					WriteTimeout: 10 * time.Second,
 				},
 				DisableTCPScan: true,
+				Log:            defaultLogSettings,
 			},
 		},
 		{
@@ -100,6 +107,7 @@ func TestParseFlags(t *testing.T) {
 					ReadTimeout:  10 * time.Second,
 					WriteTimeout: 10 * time.Second,
 				},
+				Log: defaultLogSettings,
 			},
 		},
 		{
@@ -120,6 +128,7 @@ func TestParseFlags(t *testing.T) {
 					ReadTimeout:  10 * time.Second,
 					WriteTimeout: 10 * time.Second,
 				},
+				Log: defaultLogSettings,
 			},
 		},
 		{
@@ -139,6 +148,7 @@ func TestParseFlags(t *testing.T) {
 					ReadTimeout:  10 * time.Second,
 					WriteTimeout: 10 * time.Second,
 				},
+				Log: defaultLogSettings,
 			},
 		},
 		{
@@ -158,6 +168,7 @@ func TestParseFlags(t *testing.T) {
 					ReadTimeout:  10 * time.Second,
 					WriteTimeout: 10 * time.Second,
 				},
+				Log: defaultLogSettings,
 			},
 		},
 	}

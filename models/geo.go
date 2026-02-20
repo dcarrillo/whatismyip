@@ -2,9 +2,9 @@ package models
 
 import (
 	"fmt"
-	"log"
 	"net"
 
+	"github.com/dcarrillo/whatismyip/internal/logger"
 	"github.com/oschwald/maxminddb-golang"
 )
 
@@ -126,7 +126,7 @@ func openMMDB(path string) (*maxminddb.Reader, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("Database %s has been loaded\n", path)
+	logger.Info("Geo database loaded", "path", path)
 
 	return db, nil
 }

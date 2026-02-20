@@ -1,11 +1,11 @@
 package server
 
 import (
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/dcarrillo/whatismyip/internal/logger"
 	"github.com/dcarrillo/whatismyip/service"
 )
 
@@ -42,7 +42,7 @@ func (m *Manager) Run() {
 			}
 			m.start()
 		} else {
-			log.Print("Shutting down...")
+			logger.Info("Shutting down")
 			if m.geoSvc != nil {
 				m.geoSvc.Shutdown()
 			}

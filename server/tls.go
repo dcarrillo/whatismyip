@@ -3,9 +3,9 @@ package server
 import (
 	"context"
 	"errors"
-	"log"
 	"net/http"
 
+	"github.com/dcarrillo/whatismyip/internal/logger"
 	"github.com/dcarrillo/whatismyip/internal/setting"
 )
 
@@ -30,18 +30,18 @@ func (t *TLS) Start() {
 		WriteTimeout: setting.App.Server.WriteTimeout,
 	}
 
-	log.Printf("Starting TLS server listening on %s", setting.App.TLSAddress)
+	logger.Info("Starting TLS server", "address", setting.App.TLSAddress)
 	go func() {
 		if err := t.server.ListenAndServeTLS(setting.App.TLSCrtPath, setting.App.TLSKeyPath); err != nil &&
 			!errors.Is(err, http.ErrServerClosed) {
-			log.Fatal(err)
+			logger.Error("TLS server error", "error", err)
 		}
 	}()
 }
 
 func (t *TLS) Stop() {
-	log.Print("Stopping TLS server...")
+	logger.Info("Stopping TLS server")
 	if err := t.server.Shutdown(t.ctx); err != nil {
-		log.Printf("TLS server forced to shutdown: %s", err)
+		logger.Error("TLS server forced to shutdown", "error", err)
 	}
 }
