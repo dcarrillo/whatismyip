@@ -20,6 +20,10 @@ var (
 	logger *slog.Logger
 )
 
+type contextKey string
+
+const loggerContextKey contextKey = "logger"
+
 func init() {
 	logger = slog.New(slog.NewTextHandler(os.Stdout, nil))
 }
@@ -92,12 +96,12 @@ func With(args ...any) *slog.Logger {
 	return logger.With(args...)
 }
 
-func WithContext(ctx context.Context, args ...any) context.Context {
-	return context.WithValue(ctx, "logger", logger)
+func WithContext(ctx context.Context, _ ...any) context.Context {
+	return context.WithValue(ctx, loggerContextKey, logger)
 }
 
 func FromContext(ctx context.Context) *slog.Logger {
-	if l, ok := ctx.Value("logger").(*slog.Logger); ok {
+	if l, ok := ctx.Value(loggerContextKey).(*slog.Logger); ok {
 		return l
 	}
 	return logger

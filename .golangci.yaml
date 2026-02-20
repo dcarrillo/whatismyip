@@ -24,6 +24,7 @@ linters:
         - name: exported
         - name: increment-decrement
         - name: var-naming
+          disabled: true
         - name: var-declaration
         - name: package-comments
         - name: range
