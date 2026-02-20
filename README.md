@@ -65,6 +65,8 @@ curl -L dns.ifconfig.es
 - Self-contained server that can reload GeoLite2 databases and/or SSL certificates without stop/start. The `hup` signal is honored.
 - HTML templates for the landing page.
 - Text plain and JSON output.
+- Structured logging with configurable log levels and JSON output.
+- Request ID tracking for HTTP requests.
 
 ## Endpoints
 
@@ -140,6 +142,12 @@ Usage of whatismyip:
     Path to GeoIP2 ASN database. Enables ASN information. (--geoip2-city becomes mandatory)
   -geoip2-city string
     Path to GeoIP2 city database. Enables geo information (--geoip2-asn becomes mandatory)
+  -log-json
+    Output logs in JSON format
+  -log-level string
+    Log level: debug, info, warn, error (default "info")
+  -log-request-id
+    Enable request ID logging for HTTP requests
   -metrics-bind string
     Listening address for Prometheus metrics endpoint (see https://pkg.go.dev/net?#Listen). It enables the metrics available at the given address/port via the /metrics endpoint.
   -resolver string
