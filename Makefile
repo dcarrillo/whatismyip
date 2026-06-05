@@ -12,15 +12,17 @@ integration-test:
 	go test -count=1 -v ./integration-tests
 
 install-tools:
-	@command golangci-lint > /dev/null 2>&1; if [ $$? -ne 0 ]; then \
-		curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOPATH)/bin; \
+	@if ! command -v golangci-lint &> /dev/null; then \
+		echo "Installing golangci-lint"; \
+		curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(GOPATH)/bin; \
 	fi
 
-	@command $(GOPATH)/revive > /dev/null 2>&1; if [ $$? -ne 0 ]; then \
-		go get -u github.com/mgechev/revive; \
-	fi
+	@if ! command -v revive &> /dev/null; then \
+		echo "Installing revive..."; \
+    	go install github.com/mgechev/revive@latest; \
+	fi	
 
-	@command $(GOPATH)/shadow > /dev/null 2>&1; if [ $$? -ne 0 ]; then \
+	@if ! command -v shadow &> /dev/null; then \
 		go install golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow@latest; \
 	fi
 
