@@ -63,7 +63,7 @@ func TestModels(t *testing.T) {
 
 	db, err := Setup("../test/GeoIP2-City-Test.mmdb", "../test/GeoLite2-ASN-Test.mmdb")
 	require.NoError(t, err, fmt.Sprintf("Error setting up db: %s", err))
-	defer db.CloseDBs()
+	t.Cleanup(func() { assert.NoError(t, db.CloseDBs()) })
 	assert.NotNil(t, db.ASN)
 	assert.NotNil(t, db.City)
 

@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"log"
 	"net/http"
@@ -11,11 +12,11 @@ import (
 
 type TLS struct {
 	server  *http.Server
-	handler *http.Handler
+	handler http.Handler
 	ctx     context.Context
 }
 
-func NewTLSServer(ctx context.Context, handler *http.Handler) *TLS {
+func NewTLSServer(ctx context.Context, handler http.Handler) *TLS {
 	return &TLS{
 		handler: handler,
 		ctx:     ctx,
@@ -25,9 +26,12 @@ func NewTLSServer(ctx context.Context, handler *http.Handler) *TLS {
 func (t *TLS) Start() {
 	t.server = &http.Server{
 		Addr:         setting.App.TLSAddress,
-		Handler:      *t.handler,
+		Handler:      t.handler,
 		ReadTimeout:  setting.App.Server.ReadTimeout,
 		WriteTimeout: setting.App.Server.WriteTimeout,
+		TLSConfig: &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		},
 	}
 
 	log.Printf("Starting TLS server listening on %s", setting.App.TLSAddress)
@@ -41,7 +45,9 @@ func (t *TLS) Start() {
 
 func (t *TLS) Stop() {
 	log.Print("Stopping TLS server...")
-	if err := t.server.Shutdown(t.ctx); err != nil {
+	ctx, cancel := context.WithTimeout(t.ctx, shutdownTimeout)
+	defer cancel()
+	if err := t.server.Shutdown(ctx); err != nil {
 		log.Printf("TLS server forced to shutdown: %s", err)
 	}
 }

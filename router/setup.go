@@ -13,8 +13,7 @@ var geoSvc *service.Geo
 
 func SetupTemplate(r *gin.Engine) {
 	if setting.App.TemplatePath == "" {
-		t, _ := template.New("home").Parse(home)
-		r.SetHTMLTemplate(t)
+		r.SetHTMLTemplate(template.Must(template.New("home").Parse(home)))
 	} else {
 		log.Printf("Template %s has been loaded", setting.App.TemplatePath)
 		r.LoadHTMLFiles(setting.App.TemplatePath)

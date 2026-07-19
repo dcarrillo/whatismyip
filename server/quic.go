@@ -32,7 +32,7 @@ func (q *Quic) Start() {
 	parentHandler := q.tlsServer.server.Handler
 	q.tlsServer.server.Handler = http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if err := q.server.SetQUICHeaders(rw.Header()); err != nil {
-			log.Fatal(err)
+			log.Printf("Failed to set QUIC headers: %s", err)
 		}
 
 		parentHandler.ServeHTTP(rw, req)
@@ -49,7 +49,9 @@ func (q *Quic) Start() {
 
 func (q *Quic) Stop() {
 	log.Print("Stopping QUIC server...")
-	if err := q.server.Close(); err != nil {
-		log.Print("QUIC server forced to shutdown")
+	ctx, cancel := context.WithTimeout(q.ctx, shutdownTimeout)
+	defer cancel()
+	if err := q.server.Shutdown(ctx); err != nil {
+		log.Printf("QUIC server forced to shutdown: %s", err)
 	}
 }

@@ -29,12 +29,13 @@ type dnsData struct {
 // Implement a proper vhost manager instead of using a middleware
 func GetDNSDiscoveryHandler(store *cache.Cache, domain string, redirectPort string) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		if !strings.HasSuffix(ctx.Request.Host, domain) {
+		host := hostWithoutPort(ctx.Request.Host)
+		if host != domain && !strings.HasSuffix(host, "."+domain) {
 			ctx.Next()
 			return
 		}
 
-		if ctx.Request.Host == domain && ctx.Request.URL.Path == "/" {
+		if host == domain && ctx.Request.URL.Path == "/" {
 			ctx.Redirect(http.StatusFound, fmt.Sprintf("http://%s.%s%s", uuid.New().String(), domain, redirectPort))
 			ctx.Abort()
 			return
@@ -43,6 +44,13 @@ func GetDNSDiscoveryHandler(store *cache.Cache, domain string, redirectPort stri
 		handleDNS(ctx, store)
 		ctx.Abort()
 	}
+}
+
+func hostWithoutPort(host string) string {
+	if h, _, err := net.SplitHostPort(host); err == nil {
+		return h
+	}
+	return host
 }
 
 func handleDNS(ctx *gin.Context, store *cache.Cache) {
@@ -72,12 +80,11 @@ func handleDNS(ctx *gin.Context, store *cache.Cache) {
 
 	geoResp := dnsGeoData{}
 	if geoSvc != nil {
-		cityRecord := geoSvc.LookUpCity(ip)
-		asnRecord := geoSvc.LookUpASN(ip)
-
-		geoResp = dnsGeoData{
-			Country:         cityRecord.Country.Names["en"],
-			AsnOrganization: asnRecord.AutonomousSystemOrganization,
+		if cityRecord := geoSvc.LookUpCity(ip); cityRecord != nil {
+			geoResp.Country = cityRecord.Country.Names["en"]
+		}
+		if asnRecord := geoSvc.LookUpASN(ip); asnRecord != nil {
+			geoResp.AsnOrganization = asnRecord.AutonomousSystemOrganization
 		}
 	}
 

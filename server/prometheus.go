@@ -42,7 +42,9 @@ func (p *Prometheus) Start() {
 
 func (p *Prometheus) Stop() {
 	log.Print("Stopping Prometheus server...")
-	if err := p.server.Shutdown(p.ctx); err != nil {
+	ctx, cancel := context.WithTimeout(p.ctx, shutdownTimeout)
+	defer cancel()
+	if err := p.server.Shutdown(ctx); err != nil {
 		log.Printf("Prometheus server forced to shutdown: %s", err)
 	}
 }

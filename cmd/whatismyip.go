@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"slices"
@@ -25,11 +27,11 @@ import (
 func main() {
 	o, err := setting.Setup(os.Args[1:])
 	if err != nil {
-		if err == flag.ErrHelp || err == setting.ErrVersion {
+		if errors.Is(err, flag.ErrHelp) || errors.Is(err, setting.ErrVersion) {
 			fmt.Print(o)
 			os.Exit(0)
 		}
-		fmt.Println(err)
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
@@ -38,7 +40,10 @@ func main() {
 
 	if setting.App.Resolver.Domain != "" {
 		store := cache.New(1*time.Minute, 10*time.Minute)
-		dnsEngine := resolver.Setup(store)
+		var dnsEngine *resolver.Resolver
+		if dnsEngine, err = resolver.Setup(store); err != nil {
+			log.Fatalf("Invalid resolver configuration: %s", err)
+		}
 		nameServer := server.NewDNSServer(context.Background(), dnsEngine.Handler())
 		servers = append(servers, nameServer)
 		engine.Use(router.GetDNSDiscoveryHandler(store, setting.App.Resolver.Domain, setting.App.Resolver.RedirectPort))
@@ -47,7 +52,7 @@ func main() {
 	var geoSvc *service.Geo
 	if setting.App.GeodbPath.City != "" || setting.App.GeodbPath.ASN != "" {
 		if geoSvc, err = service.NewGeo(context.Background(), setting.App.GeodbPath.City, setting.App.GeodbPath.ASN); err != nil {
-			panic(err)
+			log.Fatalf("Failed to load geo databases: %s", err)
 		}
 	}
 
@@ -92,12 +97,12 @@ func setupHTTPServers(ctx context.Context, handler http.Handler) []server.Server
 	var servers []server.Server
 
 	if setting.App.BindAddress != "" {
-		tcpServer := server.NewTCPServer(ctx, &handler)
+		tcpServer := server.NewTCPServer(ctx, handler)
 		servers = append(servers, tcpServer)
 	}
 
 	if setting.App.TLSAddress != "" {
-		tlsServer := server.NewTLSServer(ctx, &handler)
+		tlsServer := server.NewTLSServer(ctx, handler)
 		servers = append(servers, tlsServer)
 		if setting.App.EnableHTTP3 {
 			quicServer := server.NewQuicServer(ctx, tlsServer)

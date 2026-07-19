@@ -36,6 +36,9 @@ func NewGeo(ctx context.Context, cityPath string, asnPath string) (*Geo, error) 
 }
 
 func (g *Geo) LookUpCity(ip net.IP) *models.GeoRecord {
+	g.mu.RLock()
+	defer g.mu.RUnlock()
+
 	record, err := g.db.LookupCity(ip)
 	if err != nil {
 		log.Print(err)
@@ -47,6 +50,9 @@ func (g *Geo) LookUpCity(ip net.IP) *models.GeoRecord {
 }
 
 func (g *Geo) LookUpASN(ip net.IP) *models.ASNRecord {
+	g.mu.RLock()
+	defer g.mu.RUnlock()
+
 	record, err := g.db.LookupASN(ip)
 	if err != nil {
 		log.Print(err)
@@ -59,7 +65,13 @@ func (g *Geo) LookUpASN(ip net.IP) *models.ASNRecord {
 
 func (g *Geo) Shutdown() {
 	g.cancel()
-	g.db.CloseDBs()
+
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
+	if err := g.db.CloseDBs(); err != nil {
+		log.Printf("Error closing geo databases: %s", err)
+	}
 }
 
 func (g *Geo) Reload() {
@@ -71,6 +83,9 @@ func (g *Geo) Reload() {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 
-	g.db.Reload()
+	if err := g.db.Reload(); err != nil {
+		log.Printf("Geo database reload failed: %s", err)
+		return
+	}
 	log.Print("Geo database reloaded")
 }

@@ -5,9 +5,12 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/dcarrillo/whatismyip/service"
 )
+
+const shutdownTimeout = 10 * time.Second
 
 type Server interface {
 	Start()
@@ -29,11 +32,10 @@ func Setup(servers []Server, geoSvc *service.Geo) *Manager {
 func (m *Manager) Run() {
 	m.start()
 
-	signalChan := make(chan os.Signal, len(m.servers))
+	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM)
-	var s os.Signal
 	for {
-		s = <-signalChan
+		s := <-signalChan
 
 		if s == syscall.SIGHUP {
 			m.stop()
@@ -43,10 +45,10 @@ func (m *Manager) Run() {
 			m.start()
 		} else {
 			log.Print("Shutting down...")
+			m.stop()
 			if m.geoSvc != nil {
 				m.geoSvc.Shutdown()
 			}
-			m.stop()
 			break
 		}
 	}

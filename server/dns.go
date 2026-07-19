@@ -42,7 +42,9 @@ func (d *DNS) Start() {
 
 func (d *DNS) Stop() {
 	log.Print("Stopping DNS server...")
-	if err := d.server.Shutdown(); err != nil {
+	ctx, cancel := context.WithTimeout(d.ctx, shutdownTimeout)
+	defer cancel()
+	if err := d.server.ShutdownContext(ctx); err != nil {
 		log.Printf("DNS server forced to shutdown: %s", err)
 	}
 }
