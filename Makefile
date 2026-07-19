@@ -9,7 +9,7 @@ unit-test:
 	go test -count=1 -race -short -cover ./...
 
 integration-test:
-	go test -count=1 -v ./integration-tests
+	cd integration-tests && go test -count=1 -v ./...
 
 install-tools:
 	@if ! command -v golangci-lint &> /dev/null; then \
