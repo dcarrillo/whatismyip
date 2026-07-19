@@ -11,32 +11,27 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// HeadersToSortedString shorts and dumps http.Header to a string separated by \n
+// HeadersToSortedString sorts and dumps http.Header to a string separated by \n
 func HeadersToSortedString(headers http.Header) string {
-	var output string
-
 	keys := make([]string, 0, len(headers))
 	for k := range headers {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
 
+	var output strings.Builder
 	for _, k := range keys {
-		if len(headers[k]) > 1 {
-			for _, h := range headers[k] {
-				output += k + ": " + h + "\n"
-			}
-		} else {
-			output += k + ": " + headers[k][0] + "\n"
+		for _, h := range headers[k] {
+			output.WriteString(k + ": " + h + "\n")
 		}
 	}
 
-	return output
+	return output.String()
 }
 
-// GetHeadersWithoutTrustedHeaders return a http.Heade object with the original headers except trusted headers
+// GetHeadersWithoutTrustedHeaders returns a copy of the request headers with the trusted headers removed
 func GetHeadersWithoutTrustedHeaders(ctx *gin.Context) http.Header {
-	h := ctx.Request.Header
+	h := ctx.Request.Header.Clone()
 
 	for _, k := range []string{setting.App.TrustedHeader, setting.App.TrustedPortHeader} {
 		delete(h, textproto.CanonicalMIMEHeaderKey(k))
@@ -49,7 +44,7 @@ func GetHeadersWithoutTrustedHeaders(ctx *gin.Context) http.Header {
 func GetLogFormatter(param gin.LogFormatterParams) string {
 	return fmt.Sprintf("%s - [%s] \"%s %s %s\" %d %d %d %s \"%s\" \"%s\" \"%s\"\n",
 		param.ClientIP,
-		param.TimeStamp.Format("02/Nov/2006:15:04:05 -0700"),
+		param.TimeStamp.Format("02/Jan/2006:15:04:05 -0700"),
 		param.Method,
 		param.Path,
 		param.Request.Proto,

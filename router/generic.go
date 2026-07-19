@@ -75,8 +75,12 @@ func getAllAsString(ctx *gin.Context) {
 	output += "Client Port: " + getClientPort(ctx) + "\n"
 
 	if geoSvc != nil {
-		output += geoCityRecordToString(geoSvc.LookUpCity(ip)) + "\n"
-		output += geoASNRecordToString(geoSvc.LookUpASN(ip)) + "\n"
+		if cityRecord := geoSvc.LookUpCity(ip); cityRecord != nil {
+			output += geoCityRecordToString(cityRecord) + "\n"
+		}
+		if asnRecord := geoSvc.LookUpASN(ip); asnRecord != nil {
+			output += geoASNRecordToString(asnRecord) + "\n"
+		}
 	}
 
 	h := httputils.GetHeadersWithoutTrustedHeaders(ctx)
@@ -100,19 +104,18 @@ func jsonOutput(ctx *gin.Context) JSONResponse {
 
 	geoResp := GeoResponse{}
 	if geoSvc != nil {
-		cityRecord := geoSvc.LookUpCity(ip)
-		asnRecord := geoSvc.LookUpASN(ip)
-
-		geoResp = GeoResponse{
-			Country:         cityRecord.Country.Names["en"],
-			CountryCode:     cityRecord.Country.ISOCode,
-			City:            cityRecord.City.Names["en"],
-			Latitude:        cityRecord.Location.Latitude,
-			Longitude:       cityRecord.Location.Longitude,
-			PostalCode:      cityRecord.Postal.Code,
-			TimeZone:        cityRecord.Location.TimeZone,
-			ASN:             asnRecord.AutonomousSystemNumber,
-			ASNOrganization: asnRecord.AutonomousSystemOrganization,
+		if cityRecord := geoSvc.LookUpCity(ip); cityRecord != nil {
+			geoResp.Country = cityRecord.Country.Names["en"]
+			geoResp.CountryCode = cityRecord.Country.ISOCode
+			geoResp.City = cityRecord.City.Names["en"]
+			geoResp.Latitude = cityRecord.Location.Latitude
+			geoResp.Longitude = cityRecord.Location.Longitude
+			geoResp.PostalCode = cityRecord.Postal.Code
+			geoResp.TimeZone = cityRecord.Location.TimeZone
+		}
+		if asnRecord := geoSvc.LookUpASN(ip); asnRecord != nil {
+			geoResp.ASN = asnRecord.AutonomousSystemNumber
+			geoResp.ASNOrganization = asnRecord.AutonomousSystemOrganization
 		}
 	}
 

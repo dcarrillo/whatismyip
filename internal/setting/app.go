@@ -13,9 +13,8 @@ import (
 )
 
 type geodbConf struct {
-	City  string
-	ASN   string
-	Token *string
+	City string
+	ASN  string
 }
 type serverSettings struct {
 	ReadTimeout  time.Duration
@@ -136,25 +135,25 @@ func Setup(args []string) (output string, err error) {
 	}
 
 	if (App.GeodbPath.City != "" && App.GeodbPath.ASN == "") || (App.GeodbPath.City == "" && App.GeodbPath.ASN != "") {
-		return "", fmt.Errorf("both --geoip2-city and --geoip2-asn are mandatory to enable geo information")
+		return "", errors.New("both --geoip2-city and --geoip2-asn are mandatory to enable geo information")
 	}
 
 	if App.TrustedPortHeader != "" && App.TrustedHeader == "" {
-		return "", fmt.Errorf("truster-header is mandatory when truster-port-header is set")
+		return "", errors.New("trusted-header is mandatory when trusted-port-header is set")
 	}
 
 	if (App.TLSAddress != "") && (App.TLSCrtPath == "" || App.TLSKeyPath == "") {
-		return "", fmt.Errorf("in order to use TLS, the -tls-crt and -tls-key flags are mandatory")
+		return "", errors.New("in order to use TLS, the -tls-crt and -tls-key flags are mandatory")
 	}
 
 	if App.EnableHTTP3 && App.TLSAddress == "" {
-		return "", fmt.Errorf("in order to use HTTP3, the -tls-bind is mandatory")
+		return "", errors.New("in order to use HTTP3, the -tls-bind is mandatory")
 	}
 
 	if App.TemplatePath != "" {
 		info, err := os.Stat(App.TemplatePath)
-		if os.IsNotExist(err) {
-			return "", fmt.Errorf("%s no such file or directory", App.TemplatePath)
+		if err != nil {
+			return "", fmt.Errorf("template path: %w", err)
 		}
 		if info.IsDir() {
 			return "", fmt.Errorf("%s must be a file", App.TemplatePath)
@@ -165,7 +164,7 @@ func Setup(args []string) (output string, err error) {
 		var err error
 		App.Resolver, err = readYAML(resolverConf)
 		if err != nil {
-			return "", fmt.Errorf("error reading resolver configuration %w", err)
+			return "", fmt.Errorf("reading resolver configuration: %w", err)
 		}
 	}
 

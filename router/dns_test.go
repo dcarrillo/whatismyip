@@ -100,7 +100,7 @@ func TestHandleDNS(t *testing.T) {
 			req.Host = tt.subDomain + "." + domain
 
 			if tt.stored != "" {
-				store.Add(tt.subDomain, tt.stored, cache.DefaultExpiration)
+				store.Set(tt.subDomain, tt.stored, cache.DefaultExpiration)
 			}
 
 			w := httptest.NewRecorder()
@@ -143,7 +143,7 @@ func TestAcceptDNSRequest(t *testing.T) {
 			c, _ := gin.CreateTestContext(w)
 			c.Request = req
 
-			store.Add(u, testIP.ipv4, cache.DefaultExpiration)
+			store.Set(u, testIP.ipv4, cache.DefaultExpiration)
 			handleDNS(c, store)
 
 			assert.Equal(t, http.StatusOK, w.Code)

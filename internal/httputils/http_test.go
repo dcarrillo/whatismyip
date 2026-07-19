@@ -25,7 +25,7 @@ Header3: Three
 }
 
 func TestGetLogFormatter(t *testing.T) {
-	expected := "127.0.0.1 - [01/Nov/0001:00:00:00 +0000] \"GET / HTTP/1.1\" 200 100 1000 local \"golang test 1.0\" \"1.1.1.1, 2.2.2.2\" \"-\"\n"
+	expected := "127.0.0.1 - [15/Jul/2022:10:30:00 +0000] \"GET / HTTP/1.1\" 200 100 1000 local \"golang test 1.0\" \"1.1.1.1, 2.2.2.2\" \"-\"\n"
 
 	h := http.Header{}
 	h.Set("User-Agent", "golang test 1.0")
@@ -39,7 +39,7 @@ func TestGetLogFormatter(t *testing.T) {
 
 	p := gin.LogFormatterParams{
 		ClientIP:     "127.0.0.1",
-		TimeStamp:    time.Time{},
+		TimeStamp:    time.Date(2022, time.July, 15, 10, 30, 0, 0, time.UTC),
 		Method:       "GET",
 		Path:         "/",
 		StatusCode:   200,

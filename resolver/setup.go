@@ -1,6 +1,7 @@
 package resolver
 
 import (
+	"fmt"
 	"log"
 	"net"
 	"strings"
@@ -16,7 +17,7 @@ type Resolver struct {
 	handler *dns.ServeMux
 	store   *cache.Cache
 	domain  string
-	rr      []string
+	rr      []dns.RR
 	ipv4    []net.IP
 	ipv6    []net.IP
 }
@@ -28,27 +29,51 @@ func ensureDotSuffix(s string) string {
 	return s
 }
 
-func Setup(store *cache.Cache) *Resolver {
-	var ipv4, ipv6 []net.IP
-	for _, ip := range setting.App.Resolver.Ipv4 {
-		ipv4 = append(ipv4, net.ParseIP(ip))
+func Setup(store *cache.Cache) (*Resolver, error) {
+	domain := ensureDotSuffix(setting.App.Resolver.Domain)
+
+	rr := make([]dns.RR, 0, len(setting.App.Resolver.ResourceRecords))
+	for _, res := range setting.App.Resolver.ResourceRecords {
+		record, err := dns.NewRR(domain + " " + res)
+		if err != nil {
+			return nil, fmt.Errorf("parsing resource record %q: %w", res, err)
+		}
+		rr = append(rr, record)
 	}
-	for _, ip := range setting.App.Resolver.Ipv6 {
-		ipv6 = append(ipv6, net.ParseIP(ip))
+
+	ipv4, err := parseIPs(setting.App.Resolver.Ipv4)
+	if err != nil {
+		return nil, fmt.Errorf("parsing ipv4 addresses: %w", err)
+	}
+	ipv6, err := parseIPs(setting.App.Resolver.Ipv6)
+	if err != nil {
+		return nil, fmt.Errorf("parsing ipv6 addresses: %w", err)
 	}
 
 	resolver := &Resolver{
 		handler: dns.NewServeMux(),
 		store:   store,
-		domain:  ensureDotSuffix(setting.App.Resolver.Domain),
-		rr:      setting.App.Resolver.ResourceRecords,
+		domain:  domain,
+		rr:      rr,
 		ipv4:    ipv4,
 		ipv6:    ipv6,
 	}
 	resolver.handler.HandleFunc(resolver.domain, resolver.resolve)
 	resolver.handler.HandleFunc(".", resolver.blackHole)
 
-	return resolver
+	return resolver, nil
+}
+
+func parseIPs(addresses []string) ([]net.IP, error) {
+	ips := make([]net.IP, 0, len(addresses))
+	for _, address := range addresses {
+		ip := net.ParseIP(address)
+		if ip == nil {
+			return nil, fmt.Errorf("invalid IP address %q", address)
+		}
+		ips = append(ips, ip)
+	}
+	return ips, nil
 }
 
 func (rsv *Resolver) Handler() *dns.ServeMux {
@@ -58,7 +83,7 @@ func (rsv *Resolver) Handler() *dns.ServeMux {
 func (rsv *Resolver) blackHole(w dns.ResponseWriter, r *dns.Msg) {
 	msg := startReply(r)
 	msg.SetRcode(r, dns.RcodeRefused)
-	w.WriteMsg(msg)
+	writeMsg(w, msg)
 	logger(w, r.Question[0], msg.Rcode)
 	metrics.RecordDNSQuery(dns.TypeToString[r.Question[0].Qtype], dns.RcodeToString[msg.Rcode])
 }
@@ -69,17 +94,10 @@ func (rsv *Resolver) resolve(w dns.ResponseWriter, r *dns.Msg) {
 	ip, _, _ := net.SplitHostPort(w.RemoteAddr().String())
 
 	for _, res := range rsv.rr {
-		t := strings.Split(res, " ")[2]
-		if q.Qtype == dns.StringToType[t] {
-			brr, err := buildRR(rsv.domain + " " + res)
-			if err != nil {
-				msg.SetRcode(r, dns.RcodeServerFailure)
-				logger(w, q, msg.Rcode, err.Error())
-			} else {
-				msg.Answer = append(msg.Answer, brr)
-				logger(w, q, msg.Rcode)
-			}
-			w.WriteMsg(msg)
+		if q.Qtype == res.Header().Rrtype {
+			msg.Answer = append(msg.Answer, dns.Copy(res))
+			writeMsg(w, msg)
+			logger(w, q, msg.Rcode)
 			metrics.RecordDNSQuery(dns.TypeToString[q.Qtype], dns.RcodeToString[msg.Rcode])
 			return
 		}
@@ -90,14 +108,16 @@ func (rsv *Resolver) resolve(w dns.ResponseWriter, r *dns.Msg) {
 	switch {
 	case uuid.IsValid(subDomain):
 		msg.SetRcode(r, rsv.getIP(q, msg))
-		rsv.store.Add(subDomain, ip, cache.DefaultExpiration)
+		// Add fails when the uuid is already registered; keep the first seen
+		// resolver IP for the discovery window
+		_ = rsv.store.Add(subDomain, ip, cache.DefaultExpiration)
 	case lowerName == rsv.domain:
 		msg.SetRcode(r, rsv.getIP(q, msg))
 	default:
 		msg.SetRcode(r, dns.RcodeRefused)
 	}
 
-	w.WriteMsg(msg)
+	writeMsg(w, msg)
 	logger(w, q, msg.Rcode)
 	metrics.RecordDNSQuery(dns.TypeToString[q.Qtype], dns.RcodeToString[msg.Rcode])
 }
@@ -126,13 +146,10 @@ func (rsv *Resolver) getIP(question dns.Question, msg *dns.Msg) int {
 	return dns.RcodeRefused
 }
 
-func buildRR(rrs string) (dns.RR, error) {
-	rr, err := dns.NewRR(rrs)
-	if err != nil {
-		return nil, err
+func writeMsg(w dns.ResponseWriter, msg *dns.Msg) {
+	if err := w.WriteMsg(msg); err != nil {
+		log.Printf("Failed to write DNS response: %s", err)
 	}
-
-	return rr, nil
 }
 
 func setHdr(q dns.Question) dns.RR_Header {

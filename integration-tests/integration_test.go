@@ -142,7 +142,11 @@ func TestContainerIntegration(t *testing.T) {
 		Started: true,
 	})
 	require.NoError(t, err)
-	t.Cleanup(func() { c.Terminate(ctx) })
+	t.Cleanup(func() {
+		if err := c.Terminate(ctx); err != nil {
+			t.Logf("Failed to terminate container: %s", err)
+		}
+	})
 
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	tests := []struct {
@@ -301,7 +305,11 @@ func TestContainerIntegrationDisableScan(t *testing.T) {
 		Started: true,
 	})
 	require.NoError(t, err)
-	t.Cleanup(func() { c.Terminate(ctx) })
+	t.Cleanup(func() {
+		if err := c.Terminate(ctx); err != nil {
+			t.Logf("Failed to terminate container: %s", err)
+		}
+	})
 
 	t.Run("RequestScanEndpointWithDisabledScan", func(t *testing.T) {
 		req, err := http.NewRequest("GET", "http://localhost:8000/scan/tcp/8000", nil)

@@ -87,15 +87,24 @@ func getGeoAsString(ctx *gin.Context) {
 		return
 	}
 
-	field := strings.ToLower(ctx.Params.ByName("field"))
 	record := geoSvc.LookUpCity(net.ParseIP(ctx.ClientIP()))
+	if record == nil {
+		ctx.String(http.StatusNotFound, http.StatusText(http.StatusNotFound))
+		return
+	}
+
+	field := strings.ToLower(ctx.Params.ByName("field"))
 	if field == "" {
 		ctx.String(http.StatusOK, geoCityRecordToString(record))
-	} else if g, ok := geoOutput[field]; ok {
-		ctx.String(http.StatusOK, g.format(record))
-	} else {
-		ctx.String(http.StatusNotFound, http.StatusText(http.StatusNotFound))
+		return
 	}
+
+	g, ok := geoOutput[field]
+	if !ok {
+		ctx.String(http.StatusNotFound, http.StatusText(http.StatusNotFound))
+		return
+	}
+	ctx.String(http.StatusOK, g.format(record))
 }
 
 func getASNAsString(ctx *gin.Context) {
@@ -103,15 +112,25 @@ func getASNAsString(ctx *gin.Context) {
 		ctx.String(http.StatusNotFound, http.StatusText(http.StatusNotFound))
 		return
 	}
-	field := strings.ToLower(ctx.Params.ByName("field"))
+
 	record := geoSvc.LookUpASN(net.ParseIP(ctx.ClientIP()))
+	if record == nil {
+		ctx.String(http.StatusNotFound, http.StatusText(http.StatusNotFound))
+		return
+	}
+
+	field := strings.ToLower(ctx.Params.ByName("field"))
 	if field == "" {
 		ctx.String(http.StatusOK, geoASNRecordToString(record))
-	} else if g, ok := asnOutput[field]; ok {
-		ctx.String(http.StatusOK, g.format(record))
-	} else {
-		ctx.String(http.StatusNotFound, http.StatusText(http.StatusNotFound))
+		return
 	}
+
+	g, ok := asnOutput[field]
+	if !ok {
+		ctx.String(http.StatusNotFound, http.StatusText(http.StatusNotFound))
+		return
+	}
+	ctx.String(http.StatusOK, g.format(record))
 }
 
 func geoCityRecordToString(record *models.GeoRecord) string {

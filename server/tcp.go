@@ -11,11 +11,11 @@ import (
 
 type TCP struct {
 	server  *http.Server
-	handler *http.Handler
+	handler http.Handler
 	ctx     context.Context
 }
 
-func NewTCPServer(ctx context.Context, handler *http.Handler) *TCP {
+func NewTCPServer(ctx context.Context, handler http.Handler) *TCP {
 	return &TCP{
 		handler: handler,
 		ctx:     ctx,
@@ -25,7 +25,7 @@ func NewTCPServer(ctx context.Context, handler *http.Handler) *TCP {
 func (t *TCP) Start() {
 	t.server = &http.Server{
 		Addr:         setting.App.BindAddress,
-		Handler:      *t.handler,
+		Handler:      t.handler,
 		ReadTimeout:  setting.App.Server.ReadTimeout,
 		WriteTimeout: setting.App.Server.WriteTimeout,
 	}
@@ -40,7 +40,9 @@ func (t *TCP) Start() {
 
 func (t *TCP) Stop() {
 	log.Print("Stopping TCP server...")
-	if err := t.server.Shutdown(t.ctx); err != nil {
+	ctx, cancel := context.WithTimeout(t.ctx, shutdownTimeout)
+	defer cancel()
+	if err := t.server.Shutdown(ctx); err != nil {
 		log.Printf("TCP server forced to shutdown: %s", err)
 	}
 }

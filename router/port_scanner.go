@@ -29,8 +29,16 @@ func scanTCPPort(ctx *gin.Context) {
 		return
 	}
 
+	ip := net.ParseIP(ctx.ClientIP())
+	if ip == nil {
+		ctx.JSON(http.StatusBadRequest, JSONScanResponse{
+			Reason: "client ip could not be determined",
+		})
+		return
+	}
+
 	add := net.TCPAddr{
-		IP:   net.ParseIP(ctx.ClientIP()),
+		IP:   ip,
 		Port: port,
 	}
 
