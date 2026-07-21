@@ -9,15 +9,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func getHeadersAsSortedString(ctx *gin.Context) {
-	h := httputils.GetHeadersWithoutTrustedHeaders(ctx)
+func (rt *Router) getHeadersAsSortedString(ctx *gin.Context) {
+	h := httputils.GetHeadersWithoutTrustedHeaders(ctx, rt.trustedHeader, rt.trustedPortHeader)
 	h.Set("Host", ctx.Request.Host)
-
 	ctx.String(http.StatusOK, httputils.HeadersToSortedString(h))
 }
 
-func getHeaderAsString(ctx *gin.Context) {
-	headers := httputils.GetHeadersWithoutTrustedHeaders(ctx)
+func (rt *Router) getHeaderAsString(ctx *gin.Context) {
+	headers := httputils.GetHeadersWithoutTrustedHeaders(ctx, rt.trustedHeader, rt.trustedPortHeader)
 
 	h := ctx.Params.ByName("header")
 	if v := headers.Get(ctx.Params.ByName("header")); v != "" {

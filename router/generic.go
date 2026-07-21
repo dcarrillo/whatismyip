@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 
 	"github.com/dcarrillo/whatismyip/internal/httputils"
-	"github.com/dcarrillo/whatismyip/internal/setting"
 	"github.com/gin-gonic/gin"
 )
 
@@ -31,31 +30,31 @@ type JSONResponse struct {
 	GeoResponse
 }
 
-func getRoot(ctx *gin.Context) {
+func (rt *Router) getRoot(ctx *gin.Context) {
 	switch ctx.NegotiateFormat(gin.MIMEPlain, gin.MIMEHTML, gin.MIMEJSON) {
 	case gin.MIMEHTML:
 		name := "home"
-		if setting.App.TemplatePath != "" {
-			name = filepath.Base(setting.App.TemplatePath)
+		if rt.templatePath != "" {
+			name = filepath.Base(rt.templatePath)
 		}
-		ctx.HTML(http.StatusOK, name, jsonOutput(ctx))
+		ctx.HTML(http.StatusOK, name, rt.jsonOutput(ctx))
 	case gin.MIMEJSON:
-		getJSON(ctx)
+		rt.getJSON(ctx)
 	default:
 		ctx.String(http.StatusOK, ctx.ClientIP()+"\n")
 	}
 }
 
-func getClientPort(ctx *gin.Context) string {
+func (rt *Router) getClientPort(ctx *gin.Context) string {
 	var port string
-	if setting.App.TrustedPortHeader == "" {
-		if setting.App.TrustedHeader != "" {
+	if rt.trustedPortHeader == "" {
+		if rt.trustedHeader != "" {
 			port = "unknown"
 		} else {
 			_, port, _ = net.SplitHostPort(ctx.Request.RemoteAddr)
 		}
 	} else {
-		port = ctx.GetHeader(setting.App.TrustedPortHeader)
+		port = ctx.GetHeader(rt.trustedPortHeader)
 		if port == "" {
 			port = "unknown"
 		}
@@ -64,37 +63,37 @@ func getClientPort(ctx *gin.Context) string {
 	return port
 }
 
-func getClientPortAsString(ctx *gin.Context) {
-	ctx.String(http.StatusOK, getClientPort(ctx)+"\n")
+func (rt *Router) getClientPortAsString(ctx *gin.Context) {
+	ctx.String(http.StatusOK, rt.getClientPort(ctx)+"\n")
 }
 
-func getAllAsString(ctx *gin.Context) {
+func (rt *Router) getAllAsString(ctx *gin.Context) {
 	ip := net.ParseIP(ctx.ClientIP())
 
 	output := "IP: " + ip.String() + "\n"
-	output += "Client Port: " + getClientPort(ctx) + "\n"
+	output += "Client Port: " + rt.getClientPort(ctx) + "\n"
 
-	if geoSvc != nil {
-		if cityRecord := geoSvc.LookUpCity(ip); cityRecord != nil {
+	if rt.geo != nil {
+		if cityRecord := rt.geo.LookUpCity(ip); cityRecord != nil {
 			output += geoCityRecordToString(cityRecord) + "\n"
 		}
-		if asnRecord := geoSvc.LookUpASN(ip); asnRecord != nil {
+		if asnRecord := rt.geo.LookUpASN(ip); asnRecord != nil {
 			output += geoASNRecordToString(asnRecord) + "\n"
 		}
 	}
 
-	h := httputils.GetHeadersWithoutTrustedHeaders(ctx)
+	h := httputils.GetHeadersWithoutTrustedHeaders(ctx, rt.trustedHeader, rt.trustedPortHeader)
 	h.Set("Host", ctx.Request.Host)
 	output += httputils.HeadersToSortedString(h)
 
 	ctx.String(http.StatusOK, output)
 }
 
-func getJSON(ctx *gin.Context) {
-	ctx.JSON(http.StatusOK, jsonOutput(ctx))
+func (rt *Router) getJSON(ctx *gin.Context) {
+	ctx.JSON(http.StatusOK, rt.jsonOutput(ctx))
 }
 
-func jsonOutput(ctx *gin.Context) JSONResponse {
+func (rt *Router) jsonOutput(ctx *gin.Context) JSONResponse {
 	ip := net.ParseIP(ctx.ClientIP())
 
 	var version byte = 4
@@ -103,8 +102,8 @@ func jsonOutput(ctx *gin.Context) JSONResponse {
 	}
 
 	geoResp := GeoResponse{}
-	if geoSvc != nil {
-		if cityRecord := geoSvc.LookUpCity(ip); cityRecord != nil {
+	if rt.geo != nil {
+		if cityRecord := rt.geo.LookUpCity(ip); cityRecord != nil {
 			geoResp.Country = cityRecord.Country.Names["en"]
 			geoResp.CountryCode = cityRecord.Country.ISOCode
 			geoResp.City = cityRecord.City.Names["en"]
@@ -113,7 +112,7 @@ func jsonOutput(ctx *gin.Context) JSONResponse {
 			geoResp.PostalCode = cityRecord.Postal.Code
 			geoResp.TimeZone = cityRecord.Location.TimeZone
 		}
-		if asnRecord := geoSvc.LookUpASN(ip); asnRecord != nil {
+		if asnRecord := rt.geo.LookUpASN(ip); asnRecord != nil {
 			geoResp.ASN = asnRecord.AutonomousSystemNumber
 			geoResp.ASNOrganization = asnRecord.AutonomousSystemOrganization
 		}
@@ -122,9 +121,9 @@ func jsonOutput(ctx *gin.Context) JSONResponse {
 	return JSONResponse{
 		IP:          ip.String(),
 		IPVersion:   version,
-		ClientPort:  getClientPort(ctx),
+		ClientPort:  rt.getClientPort(ctx),
 		Host:        ctx.Request.Host,
-		Headers:     httputils.GetHeadersWithoutTrustedHeaders(ctx),
+		Headers:     httputils.GetHeadersWithoutTrustedHeaders(ctx, rt.trustedHeader, rt.trustedPortHeader),
 		GeoResponse: geoResp,
 	}
 }

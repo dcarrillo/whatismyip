@@ -55,7 +55,7 @@ func TestParseMandatoryFlags(t *testing.T) {
 
 	for _, tt := range mandatoryFlags {
 		t.Run(strings.Join(tt.args, " "), func(t *testing.T) {
-			_, err := Setup(tt.args)
+			_, _, err := Setup(tt.args)
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), "mandatory")
 		})
@@ -65,11 +65,11 @@ func TestParseMandatoryFlags(t *testing.T) {
 func TestParseFlags(t *testing.T) {
 	flags := []struct {
 		args []string
-		conf settings
+		conf Settings
 	}{
 		{
 			[]string{},
-			settings{
+			Settings{
 				BindAddress: ":8080",
 				Server: serverSettings{
 					ReadTimeout:  10 * time.Second,
@@ -79,7 +79,7 @@ func TestParseFlags(t *testing.T) {
 		},
 		{
 			[]string{"-disable-scan"},
-			settings{
+			Settings{
 				BindAddress: ":8080",
 				Server: serverSettings{
 					ReadTimeout:  10 * time.Second,
@@ -90,7 +90,7 @@ func TestParseFlags(t *testing.T) {
 		},
 		{
 			[]string{"-bind", ":8001", "-geoip2-city", "/city-path", "-geoip2-asn", "/asn-path"},
-			settings{
+			Settings{
 				GeodbPath: geodbConf{
 					City: "/city-path",
 					ASN:  "/asn-path",
@@ -107,7 +107,7 @@ func TestParseFlags(t *testing.T) {
 				"-geoip2-city", "/city-path", "-geoip2-asn", "/asn-path", "-tls-bind", ":9000",
 				"-tls-crt", "/crt-path", "-tls-key", "/key-path",
 			},
-			settings{
+			Settings{
 				GeodbPath: geodbConf{
 					City: "/city-path",
 					ASN:  "/asn-path",
@@ -127,7 +127,7 @@ func TestParseFlags(t *testing.T) {
 				"-geoip2-city", "/city-path", "-geoip2-asn", "/asn-path",
 				"-trusted-header", "header", "-trusted-port-header", "port-header",
 			},
-			settings{
+			Settings{
 				GeodbPath: geodbConf{
 					City: "/city-path",
 					ASN:  "/asn-path",
@@ -146,7 +146,7 @@ func TestParseFlags(t *testing.T) {
 				"-geoip2-city", "/city-path", "-geoip2-asn", "/asn-path",
 				"-trusted-header", "header", "-enable-secure-headers",
 			},
-			settings{
+			Settings{
 				GeodbPath: geodbConf{
 					City: "/city-path",
 					ASN:  "/asn-path",
@@ -164,9 +164,9 @@ func TestParseFlags(t *testing.T) {
 
 	for _, tt := range flags {
 		t.Run(strings.Join(tt.args, " "), func(t *testing.T) {
-			_, err := Setup(tt.args)
+			cfg, _, err := Setup(tt.args)
 			require.Nil(t, err)
-			assert.True(t, reflect.DeepEqual(App, tt.conf))
+			assert.True(t, reflect.DeepEqual(cfg, tt.conf))
 		})
 	}
 }
@@ -176,7 +176,7 @@ func TestParseFlagsUsage(t *testing.T) {
 
 	for _, arg := range usageArgs {
 		t.Run(arg, func(t *testing.T) {
-			output, err := Setup([]string{arg})
+			_, output, err := Setup([]string{arg})
 			assert.ErrorIs(t, err, flag.ErrHelp)
 			assert.Contains(t, output, "Usage of")
 		})
@@ -184,7 +184,7 @@ func TestParseFlagsUsage(t *testing.T) {
 }
 
 func TestParseFlagVersion(t *testing.T) {
-	output, err := Setup([]string{"-version"})
+	_, output, err := Setup([]string{"-version"})
 	assert.ErrorIs(t, err, ErrVersion)
 	assert.Contains(t, output, "whatismyip version")
 }
@@ -209,7 +209,7 @@ func TestParseFlagTemplate(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := Setup(tc.flags)
+			_, _, err := Setup(tc.flags)
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tc.errMsg)
 		})

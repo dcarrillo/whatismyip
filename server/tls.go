@@ -6,37 +6,43 @@ import (
 	"errors"
 	"log"
 	"net/http"
-
-	"github.com/dcarrillo/whatismyip/internal/setting"
 )
 
 type TLS struct {
-	server  *http.Server
-	handler http.Handler
-	ctx     context.Context
+	server   *http.Server
+	handler  http.Handler
+	ctx      context.Context
+	addr     string
+	crtPath  string
+	keyPath  string
+	timeouts Timeouts
 }
 
-func NewTLSServer(ctx context.Context, handler http.Handler) *TLS {
+func NewTLSServer(ctx context.Context, handler http.Handler, addr, crt, key string, timeouts Timeouts) *TLS {
 	return &TLS{
-		handler: handler,
-		ctx:     ctx,
+		handler:  handler,
+		ctx:      ctx,
+		addr:     addr,
+		crtPath:  crt,
+		keyPath:  key,
+		timeouts: timeouts,
 	}
 }
 
 func (t *TLS) Start() {
 	t.server = &http.Server{
-		Addr:         setting.App.TLSAddress,
+		Addr:         t.addr,
 		Handler:      t.handler,
-		ReadTimeout:  setting.App.Server.ReadTimeout,
-		WriteTimeout: setting.App.Server.WriteTimeout,
+		ReadTimeout:  t.timeouts.ReadTimeout,
+		WriteTimeout: t.timeouts.WriteTimeout,
 		TLSConfig: &tls.Config{
 			MinVersion: tls.VersionTLS12,
 		},
 	}
 
-	log.Printf("Starting TLS server listening on %s", setting.App.TLSAddress)
+	log.Printf("Starting TLS server listening on %s", t.addr)
 	go func() {
-		if err := t.server.ListenAndServeTLS(setting.App.TLSCrtPath, setting.App.TLSKeyPath); err != nil &&
+		if err := t.server.ListenAndServeTLS(t.crtPath, t.keyPath); err != nil &&
 			!errors.Is(err, http.ErrServerClosed) {
 			log.Fatal(err)
 		}

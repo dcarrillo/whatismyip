@@ -6,18 +6,21 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/dcarrillo/whatismyip/internal/setting"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type Prometheus struct {
-	server *http.Server
-	ctx    context.Context
+	server   *http.Server
+	ctx      context.Context
+	addr     string
+	timeouts Timeouts
 }
 
-func NewPrometheusServer(ctx context.Context) *Prometheus {
+func NewPrometheusServer(ctx context.Context, addr string, timeouts Timeouts) *Prometheus {
 	return &Prometheus{
-		ctx: ctx,
+		ctx:      ctx,
+		addr:     addr,
+		timeouts: timeouts,
 	}
 }
 
@@ -26,13 +29,13 @@ func (p *Prometheus) Start() {
 	mux.Handle("/metrics", promhttp.Handler())
 
 	p.server = &http.Server{
-		Addr:         setting.App.PrometheusAddress,
+		Addr:         p.addr,
 		Handler:      mux,
-		ReadTimeout:  setting.App.Server.ReadTimeout,
-		WriteTimeout: setting.App.Server.WriteTimeout,
+		ReadTimeout:  p.timeouts.ReadTimeout,
+		WriteTimeout: p.timeouts.WriteTimeout,
 	}
 
-	log.Printf("Starting Prometheus server listening on %s", setting.App.PrometheusAddress)
+	log.Printf("Starting Prometheus server listening on %s", p.addr)
 	go func() {
 		if err := p.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatal(err)

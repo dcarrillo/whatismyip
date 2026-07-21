@@ -16,7 +16,7 @@ import (
 
 func TestGetDNSDiscoveryHandler(t *testing.T) {
 	store := cache.New(cache.NoExpiration, cache.NoExpiration)
-	handler := GetDNSDiscoveryHandler(store, domain, "")
+	handler := GetDNSDiscoveryHandler(store, rt.geo, domain, "")
 
 	t.Run("calls next if host does not have domain suffix", func(t *testing.T) {
 		req, _ := http.NewRequest("GET", "/", nil)
@@ -106,7 +106,7 @@ func TestHandleDNS(t *testing.T) {
 			w := httptest.NewRecorder()
 			c, _ := gin.CreateTestContext(w)
 			c.Request = req
-			handleDNS(c, store)
+			handleDNS(c, store, rt.geo)
 			assert.Equal(t, http.StatusNotFound, w.Code)
 		})
 	}
@@ -144,7 +144,7 @@ func TestAcceptDNSRequest(t *testing.T) {
 			c.Request = req
 
 			store.Set(u, testIP.ipv4, cache.DefaultExpiration)
-			handleDNS(c, store)
+			handleDNS(c, store, rt.geo)
 
 			assert.Equal(t, http.StatusOK, w.Code)
 			assert.Equal(t, tt.want, w.Body.String())

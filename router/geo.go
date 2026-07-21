@@ -81,13 +81,13 @@ var asnOutput = map[string]asnDataFormatter{
 	},
 }
 
-func getGeoAsString(ctx *gin.Context) {
-	if geoSvc == nil {
+func (rt *Router) getGeoAsString(ctx *gin.Context) {
+	if rt.geo == nil {
 		ctx.String(http.StatusNotFound, http.StatusText(http.StatusNotFound))
 		return
 	}
 
-	record := geoSvc.LookUpCity(net.ParseIP(ctx.ClientIP()))
+	record := rt.geo.LookUpCity(net.ParseIP(ctx.ClientIP()))
 	if record == nil {
 		ctx.String(http.StatusNotFound, http.StatusText(http.StatusNotFound))
 		return
@@ -107,13 +107,13 @@ func getGeoAsString(ctx *gin.Context) {
 	ctx.String(http.StatusOK, g.format(record))
 }
 
-func getASNAsString(ctx *gin.Context) {
-	if geoSvc == nil {
+func (rt *Router) getASNAsString(ctx *gin.Context) {
+	if rt.geo == nil {
 		ctx.String(http.StatusNotFound, http.StatusText(http.StatusNotFound))
 		return
 	}
 
-	record := geoSvc.LookUpASN(net.ParseIP(ctx.ClientIP()))
+	record := rt.geo.LookUpASN(net.ParseIP(ctx.ClientIP()))
 	if record == nil {
 		ctx.String(http.StatusNotFound, http.StatusText(http.StatusNotFound))
 		return
