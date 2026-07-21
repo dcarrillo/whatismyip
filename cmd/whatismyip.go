@@ -25,7 +25,7 @@ import (
 )
 
 func main() {
-	o, err := setting.Setup(os.Args[1:])
+	_, o, err := setting.Setup(os.Args[1:])
 	if err != nil {
 		if errors.Is(err, flag.ErrHelp) || errors.Is(err, setting.ErrVersion) {
 			fmt.Print(o)

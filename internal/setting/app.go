@@ -29,7 +29,7 @@ type resolver struct {
 	Ipv6            []string `yaml:"ipv6,omitempty"`
 }
 
-type settings struct {
+type Settings struct {
 	GeodbPath           geodbConf
 	TemplatePath        string
 	BindAddress         string
@@ -51,7 +51,7 @@ const defaultAddress = ":8080"
 
 var ErrVersion = errors.New("setting: version requested")
 
-var App = settings{
+var App = Settings{
 	// hard-coded for the time being
 	Server: serverSettings{
 		ReadTimeout:  10 * time.Second,
@@ -59,67 +59,72 @@ var App = settings{
 	},
 }
 
-func Setup(args []string) (output string, err error) {
+func Setup(args []string) (cfg Settings, output string, err error) {
 	flags := flag.NewFlagSet("whatismyip", flag.ContinueOnError)
 	var buf bytes.Buffer
 	var resolverConf string
 	flags.SetOutput(&buf)
 
-	flags.StringVar(&App.GeodbPath.City, "geoip2-city", "", "Path to GeoIP2 city database. Enables geo information (--geoip2-asn becomes mandatory)")
-	flags.StringVar(&App.GeodbPath.ASN, "geoip2-asn", "", "Path to GeoIP2 ASN database. Enables ASN information. (--geoip2-city becomes mandatory)")
-	flags.StringVar(&App.TemplatePath, "template", "", "Path to the template file")
+	cfg.Server = serverSettings{
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	}
+
+	flags.StringVar(&cfg.GeodbPath.City, "geoip2-city", "", "Path to GeoIP2 city database. Enables geo information (--geoip2-asn becomes mandatory)")
+	flags.StringVar(&cfg.GeodbPath.ASN, "geoip2-asn", "", "Path to GeoIP2 ASN database. Enables ASN information. (--geoip2-city becomes mandatory)")
+	flags.StringVar(&cfg.TemplatePath, "template", "", "Path to the template file")
 	flags.StringVar(
 		&resolverConf,
 		"resolver",
 		"",
 		"Path to the resolver configuration. It actually enables the resolver for DNS client discovery.")
 	flags.StringVar(
-		&App.BindAddress,
+		&cfg.BindAddress,
 		"bind",
 		defaultAddress,
 		"Listening address (see https://pkg.go.dev/net?#Listen)",
 	)
 	flags.StringVar(
-		&App.TLSAddress,
+		&cfg.TLSAddress,
 		"tls-bind",
 		"",
 		"Listening address for TLS (see https://pkg.go.dev/net?#Listen)",
 	)
-	flags.StringVar(&App.TLSCrtPath, "tls-crt", "", "When using TLS, path to certificate file")
-	flags.StringVar(&App.TLSKeyPath, "tls-key", "", "When using TLS, path to private key file")
+	flags.StringVar(&cfg.TLSCrtPath, "tls-crt", "", "When using TLS, path to certificate file")
+	flags.StringVar(&cfg.TLSKeyPath, "tls-key", "", "When using TLS, path to private key file")
 	flags.StringVar(
-		&App.PrometheusAddress,
+		&cfg.PrometheusAddress,
 		"metrics-bind",
 		"",
 		"Listening address for Prometheus metrics endpoint (see https://pkg.go.dev/net?#Listen). It enables the metrics available at the given address/port via the /metrics endpoint.",
 	)
 	flags.StringVar(
-		&App.TrustedHeader,
+		&cfg.TrustedHeader,
 		"trusted-header",
 		"",
 		"Trusted request header for remote IP (e.g. X-Real-IP). When using this feature if -trusted-port-header is not set the client port is shown as 'unknown'",
 	)
 	flags.StringVar(
-		&App.TrustedPortHeader,
+		&cfg.TrustedPortHeader,
 		"trusted-port-header",
 		"",
 		"Trusted request header for remote client port (e.g. X-Real-Port). When this parameter is set -trusted-header becomes mandatory",
 	)
-	flags.BoolVar(&App.version, "version", false, "Output version information and exit")
+	flags.BoolVar(&cfg.version, "version", false, "Output version information and exit")
 	flags.BoolVar(
-		&App.EnableSecureHeaders,
+		&cfg.EnableSecureHeaders,
 		"enable-secure-headers",
 		false,
 		"Add sane security-related headers to every response",
 	)
 	flags.BoolVar(
-		&App.EnableHTTP3,
+		&cfg.EnableHTTP3,
 		"enable-http3",
 		false,
 		"Enable HTTP/3 protocol. HTTP/3 requires --tls-bind set, as HTTP/3 starts as a TLS connection that then gets upgraded to UDP. The UDP port is the same as the one used for the TLS server.",
 	)
 	flags.BoolVar(
-		&App.DisableTCPScan,
+		&cfg.DisableTCPScan,
 		"disable-scan",
 		false,
 		"Disable TCP port scanning functionality",
@@ -127,48 +132,49 @@ func Setup(args []string) (output string, err error) {
 
 	err = flags.Parse(args)
 	if err != nil {
-		return buf.String(), err
+		return cfg, buf.String(), err
 	}
 
-	if App.version {
-		return fmt.Sprintf("whatismyip version %s", core.Version), ErrVersion
+	if cfg.version {
+		return cfg, fmt.Sprintf("whatismyip version %s", core.Version), ErrVersion
 	}
 
-	if (App.GeodbPath.City != "" && App.GeodbPath.ASN == "") || (App.GeodbPath.City == "" && App.GeodbPath.ASN != "") {
-		return "", errors.New("both --geoip2-city and --geoip2-asn are mandatory to enable geo information")
+	if (cfg.GeodbPath.City != "" && cfg.GeodbPath.ASN == "") || (cfg.GeodbPath.City == "" && cfg.GeodbPath.ASN != "") {
+		return cfg, "", errors.New("both --geoip2-city and --geoip2-asn are mandatory to enable geo information")
 	}
 
-	if App.TrustedPortHeader != "" && App.TrustedHeader == "" {
-		return "", errors.New("trusted-header is mandatory when trusted-port-header is set")
+	if cfg.TrustedPortHeader != "" && cfg.TrustedHeader == "" {
+		return cfg, "", errors.New("trusted-header is mandatory when trusted-port-header is set")
 	}
 
-	if (App.TLSAddress != "") && (App.TLSCrtPath == "" || App.TLSKeyPath == "") {
-		return "", errors.New("in order to use TLS, the -tls-crt and -tls-key flags are mandatory")
+	if (cfg.TLSAddress != "") && (cfg.TLSCrtPath == "" || cfg.TLSKeyPath == "") {
+		return cfg, "", errors.New("in order to use TLS, the -tls-crt and -tls-key flags are mandatory")
 	}
 
-	if App.EnableHTTP3 && App.TLSAddress == "" {
-		return "", errors.New("in order to use HTTP3, the -tls-bind is mandatory")
+	if cfg.EnableHTTP3 && cfg.TLSAddress == "" {
+		return cfg, "", errors.New("in order to use HTTP3, the -tls-bind is mandatory")
 	}
 
-	if App.TemplatePath != "" {
-		info, err := os.Stat(App.TemplatePath)
+	if cfg.TemplatePath != "" {
+		info, err := os.Stat(cfg.TemplatePath)
 		if err != nil {
-			return "", fmt.Errorf("template path: %w", err)
+			return cfg, "", fmt.Errorf("template path: %w", err)
 		}
 		if info.IsDir() {
-			return "", fmt.Errorf("%s must be a file", App.TemplatePath)
+			return cfg, "", fmt.Errorf("%s must be a file", cfg.TemplatePath)
 		}
 	}
 
 	if resolverConf != "" {
 		var err error
-		App.Resolver, err = readYAML(resolverConf)
+		cfg.Resolver, err = readYAML(resolverConf)
 		if err != nil {
-			return "", fmt.Errorf("reading resolver configuration: %w", err)
+			return cfg, "", fmt.Errorf("reading resolver configuration: %w", err)
 		}
 	}
 
-	return buf.String(), nil
+	App = cfg
+	return cfg, buf.String(), nil
 }
 
 func readYAML(path string) (resolver resolver, err error) {

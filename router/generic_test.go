@@ -153,7 +153,7 @@ func TestClientPort(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		_, _ = setting.Setup(tt.args.params)
+		_, _, _ = setting.Setup(tt.args.params)
 		t.Run(tt.name, func(t *testing.T) {
 			req, _ := http.NewRequest("GET", "/client-port", nil)
 			req.RemoteAddr = net.JoinHostPort(testIP.ipv4, "1000")
@@ -181,7 +181,7 @@ func TestNotFound(t *testing.T) {
 }
 
 func TestJSON(t *testing.T) {
-	_, _ = setting.Setup(
+	_, _, _ = setting.Setup(
 		[]string{
 			"-geoip2-city", "city",
 			"-geoip2-asn", "asn",
@@ -248,7 +248,7 @@ ASN Organization:
 Header1: one
 Host: test
 `
-	_, _ = setting.Setup(
+	_, _, _ = setting.Setup(
 		[]string{
 			"-geoip2-city", "city",
 			"-geoip2-asn", "asn",

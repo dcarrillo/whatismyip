@@ -27,7 +27,7 @@ Header2: value22
 Header3: value3
 Host: 
 `
-	_, _ = setting.Setup([]string{
+	_, _, _ = setting.Setup([]string{
 		"-geoip2-city", "city",
 		"-geoip2-asn", "asn",
 		"-trusted-header", trustedHeader,
