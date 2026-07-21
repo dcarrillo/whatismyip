@@ -5,16 +5,17 @@ Single-binary Go service: HTTP/TLS/QUIC server that returns the client's IP, geo
 ## Commands
 
 ```sh
-make build                             # CGO_ENABLED=0 build -ldflags "-s -w" -> ./whatismyip
-make unit-test                         # go test -count=1 -race -short -cover ./...
-make integration-test                  # requires Docker; runs separate module (integration-tests/)
-make test                              # unit-test + integration-test
-make lint                              # gofmt -l + golangci-lint + shadow (auto-installs tools)
-make docker-run                        # builds & runs container exposing :8080 :8081 :9100
-make docker-push VERSION=x.y.z         # tagged release push (blocks devel builds)
+make build                                           # CGO_ENABLED=0 -> ./whatismyip (GOOS/GOARCH for cross-compile)
+make build-all                                       # cross-compile all 5 platforms into dist/
+make unit-test                                       # go test -count=1 -race -short -cover ./...
+make integration-test                                # requires Docker; runs integration-tests/ module
+make test                                            # unit-test + integration-test
+make lint                                            # gofmt -l + golangci-lint + shadow (auto-installs tools)
+make docker-build                                    # local single-arch build (root Dockerfile)
+make docker-run                                      # builds dev image + runs with test DBs, ports :8080 :8081 :9100
 ```
 
-**Order**: `lint -> unit-test -> integration-test`. Integration tests depend on testcontainers-go (needs Docker running). Integration tests are a separate Go module with its own `go.mod` — run from the `integration-tests/` directory.
+**Order and quirks**: `lint -> unit-test -> integration-test`. Integration tests use testcontainers-go (needs Docker). They are a separate Go module with its own `go.mod` — run from the `integration-tests/` directory. They use `test/Dockerfile` (distinct from the root `Dockerfile`).
 
 ## Architecture
 

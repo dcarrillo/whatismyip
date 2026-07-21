@@ -1,6 +1,8 @@
 GOPATH ?= $(shell go env GOPATH)
 VERSION ?= devel-$(shell git rev-parse --short HEAD)
 DOCKER_URL ?= dcarrillo/whatismyip
+GOOS ?= $(shell go env GOOS)
+GOARCH ?= $(shell go env GOARCH)
 
 .PHONY: test
 test: unit-test integration-test
@@ -32,25 +34,20 @@ lint: install-tools
 	shadow ./...
 
 build:
-	CGO_ENABLED=0 go build -ldflags="-s -w -X 'github.com/dcarrillo/whatismyip/internal/core.Version=${VERSION}'" -o whatismyip ./cmd
+	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build -ldflags="-s -w -X 'github.com/dcarrillo/whatismyip/internal/core.Version=${VERSION}'" -o whatismyip ./cmd
 
-docker-build-dev:
-	docker build --target=dev --build-arg=ARG_VERSION="${VERSION}" --tag ${DOCKER_URL}:${VERSION} .
+build-all:
+	@mkdir -p dist
+	GOOS=linux GOARCH=amd64 $(MAKE) build && mv whatismyip dist/whatismyip-linux-amd64
+	GOOS=linux GOARCH=arm64 $(MAKE) build && mv whatismyip dist/whatismyip-linux-arm64
+	GOOS=darwin GOARCH=amd64 $(MAKE) build && mv whatismyip dist/whatismyip-darwin-amd64
+	GOOS=darwin GOARCH=arm64 $(MAKE) build && mv whatismyip dist/whatismyip-darwin-arm64
+	GOOS=windows GOARCH=amd64 $(MAKE) build && mv whatismyip dist/whatismyip-windows-amd64.exe
 
-docker-build-prod:
-	docker build --target=prod --build-arg=ARG_VERSION="${VERSION}" --tag ${DOCKER_URL}:${VERSION} .
+docker-build:
+	docker build --build-arg=ARG_VERSION="${VERSION}" --tag ${DOCKER_URL}:${VERSION} .
 
-docker-push: docker-build-prod
-ifneq (,$(findstring devel-,$(VERSION)))
-	@echo "VERSION is set to ${VERSION}, I can't push devel builds"
-	exit 1
-else
-	docker push ${DOCKER_URL}:${VERSION}
-	docker tag ${DOCKER_URL}:${VERSION} ${DOCKER_URL}:latest
-	docker push ${DOCKER_URL}:latest
-endif
-
-docker-run: docker-build-dev
+docker-run: docker-build
 	docker run --tty --interactive --rm \
 		--publish 8080:8080/tcp \
 		--publish 8081:8081/tcp \
