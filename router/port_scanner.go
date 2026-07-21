@@ -17,7 +17,7 @@ type JSONScanResponse struct {
 	Reason    string `json:"reason"`
 }
 
-func scanTCPPort(ctx *gin.Context) {
+func (rt *Router) scanTCPPort(ctx *gin.Context) {
 	port, err := strconv.Atoi(ctx.Params.ByName("port"))
 	if err == nil && (port < 1 || port > 65535) {
 		err = fmt.Errorf("%d is not a valid port number", port)

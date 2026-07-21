@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	validator "github.com/dcarrillo/whatismyip/internal/validator/uuid"
+	"github.com/dcarrillo/whatismyip/service"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/patrickmn/go-cache"
@@ -27,7 +28,7 @@ type dnsData struct {
 
 // TODO
 // Implement a proper vhost manager instead of using a middleware
-func GetDNSDiscoveryHandler(store *cache.Cache, domain string, redirectPort string) gin.HandlerFunc {
+func GetDNSDiscoveryHandler(store *cache.Cache, geoSvc *service.Geo, domain string, redirectPort string) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		host := hostWithoutPort(ctx.Request.Host)
 		if host != domain && !strings.HasSuffix(host, "."+domain) {
@@ -41,7 +42,7 @@ func GetDNSDiscoveryHandler(store *cache.Cache, domain string, redirectPort stri
 			return
 		}
 
-		handleDNS(ctx, store)
+		handleDNS(ctx, store, geoSvc)
 		ctx.Abort()
 	}
 }
@@ -53,7 +54,7 @@ func hostWithoutPort(host string) string {
 	return host
 }
 
-func handleDNS(ctx *gin.Context, store *cache.Cache) {
+func handleDNS(ctx *gin.Context, store *cache.Cache, geoSvc *service.Geo) {
 	d := strings.Split(ctx.Request.Host, ".")[0]
 	if !validator.IsValid(d) {
 		ctx.String(http.StatusNotFound, http.StatusText(http.StatusNotFound))
