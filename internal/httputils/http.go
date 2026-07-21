@@ -7,7 +7,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/dcarrillo/whatismyip/internal/setting"
 	"github.com/gin-gonic/gin"
 )
 
@@ -30,10 +29,10 @@ func HeadersToSortedString(headers http.Header) string {
 }
 
 // GetHeadersWithoutTrustedHeaders returns a copy of the request headers with the trusted headers removed
-func GetHeadersWithoutTrustedHeaders(ctx *gin.Context) http.Header {
+func GetHeadersWithoutTrustedHeaders(ctx *gin.Context, trustedHeader, trustedPortHeader string) http.Header {
 	h := ctx.Request.Header.Clone()
 
-	for _, k := range []string{setting.App.TrustedHeader, setting.App.TrustedPortHeader} {
+	for _, k := range []string{trustedHeader, trustedPortHeader} {
 		delete(h, textproto.CanonicalMIMEHeaderKey(k))
 	}
 
