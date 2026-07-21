@@ -15,17 +15,17 @@ import (
 	"github.com/dcarrillo/whatismyip/internal/metrics"
 	"github.com/dcarrillo/whatismyip/internal/setting"
 	"github.com/dcarrillo/whatismyip/resolver"
+	"github.com/dcarrillo/whatismyip/router"
 	"github.com/dcarrillo/whatismyip/server"
 	"github.com/dcarrillo/whatismyip/service"
 	"github.com/gin-contrib/secure"
 	"github.com/patrickmn/go-cache"
 
-	"github.com/dcarrillo/whatismyip/router"
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	_, o, err := setting.Setup(os.Args[1:])
+	cfg, o, err := setting.Setup(os.Args[1:])
 	if err != nil {
 		if errors.Is(err, flag.ErrHelp) || errors.Is(err, setting.ErrVersion) {
 			fmt.Print(o)
@@ -35,42 +35,43 @@ func main() {
 		os.Exit(1)
 	}
 
-	servers := []server.Server{}
-	engine := setupEngine()
+	var geoSvc *service.Geo
+	if cfg.GeodbPath.City != "" || cfg.GeodbPath.ASN != "" {
+		if geoSvc, err = service.NewGeo(context.Background(), cfg.GeodbPath.City, cfg.GeodbPath.ASN); err != nil {
+			log.Fatalf("Failed to load geo databases: %s", err)
+		}
+	}
 
-	if setting.App.Resolver.Domain != "" {
+	servers := []server.Server{}
+	engine := setupEngine(cfg)
+
+	if cfg.Resolver.Domain != "" {
 		store := cache.New(1*time.Minute, 10*time.Minute)
 		var dnsEngine *resolver.Resolver
 		if dnsEngine, err = resolver.Setup(store, resolver.Settings{
-			Domain:          setting.App.Resolver.Domain,
-			ResourceRecords: setting.App.Resolver.ResourceRecords,
-			RedirectPort:    setting.App.Resolver.RedirectPort,
-			IPv4:            setting.App.Resolver.Ipv4,
-			IPv6:            setting.App.Resolver.Ipv6,
+			Domain:          cfg.Resolver.Domain,
+			ResourceRecords: cfg.Resolver.ResourceRecords,
+			RedirectPort:    cfg.Resolver.RedirectPort,
+			IPv4:            cfg.Resolver.Ipv4,
+			IPv6:            cfg.Resolver.Ipv6,
 		}); err != nil {
 			log.Fatalf("Invalid resolver configuration: %s", err)
 		}
 		nameServer := server.NewDNSServer(context.Background(), dnsEngine.Handler())
 		servers = append(servers, nameServer)
-		engine.Use(router.GetDNSDiscoveryHandler(store, setting.App.Resolver.Domain, setting.App.Resolver.RedirectPort))
+		engine.Use(router.GetDNSDiscoveryHandler(store, geoSvc, cfg.Resolver.Domain, cfg.Resolver.RedirectPort))
 	}
 
-	var geoSvc *service.Geo
-	if setting.App.GeodbPath.City != "" || setting.App.GeodbPath.ASN != "" {
-		if geoSvc, err = service.NewGeo(context.Background(), setting.App.GeodbPath.City, setting.App.GeodbPath.ASN); err != nil {
-			log.Fatalf("Failed to load geo databases: %s", err)
-		}
-	}
+	rt := router.NewRouter(geoSvc, cfg.TrustedHeader, cfg.TrustedPortHeader, cfg.TemplatePath, cfg.DisableTCPScan)
+	router.SetupTemplate(engine, cfg.TemplatePath)
+	router.Setup(engine, rt)
+	servers = slices.Concat(servers, setupHTTPServers(context.Background(), engine.Handler(), cfg))
 
-	router.SetupTemplate(engine)
-	router.Setup(engine, geoSvc)
-	servers = slices.Concat(servers, setupHTTPServers(context.Background(), engine.Handler()))
-
-	if setting.App.PrometheusAddress != "" {
-		prometheusServer := server.NewPrometheusServer(context.Background(), setting.App.PrometheusAddress,
+	if cfg.PrometheusAddress != "" {
+		prometheusServer := server.NewPrometheusServer(context.Background(), cfg.PrometheusAddress,
 			server.ServerTimeouts{
-				ReadTimeout:  setting.App.Server.ReadTimeout,
-				WriteTimeout: setting.App.Server.WriteTimeout,
+				ReadTimeout:  cfg.Server.ReadTimeout,
+				WriteTimeout: cfg.Server.WriteTimeout,
 			})
 		servers = append(servers, prometheusServer)
 	}
@@ -79,18 +80,18 @@ func main() {
 	whatismyip.Run()
 }
 
-func setupEngine() *gin.Engine {
+func setupEngine(cfg setting.Settings) *gin.Engine {
 	gin.DisableConsoleColor()
 	if os.Getenv(gin.EnvGinMode) == "" {
 		gin.SetMode(gin.ReleaseMode)
 	}
 	engine := gin.New()
 	engine.Use(gin.LoggerWithFormatter(httputils.GetLogFormatter), gin.Recovery())
-	if setting.App.PrometheusAddress != "" {
+	if cfg.PrometheusAddress != "" {
 		metrics.Enable()
 		engine.Use(metrics.GinMiddleware())
 	}
-	if setting.App.EnableSecureHeaders {
+	if cfg.EnableSecureHeaders {
 		engine.Use(secure.New(secure.Config{
 			BrowserXssFilter:   true,
 			ContentTypeNosniff: true,
@@ -98,28 +99,28 @@ func setupEngine() *gin.Engine {
 		}))
 	}
 	_ = engine.SetTrustedProxies(nil)
-	engine.TrustedPlatform = setting.App.TrustedHeader
+	engine.TrustedPlatform = cfg.TrustedHeader
 
 	return engine
 }
 
-func setupHTTPServers(ctx context.Context, handler http.Handler) []server.Server {
+func setupHTTPServers(ctx context.Context, handler http.Handler, cfg setting.Settings) []server.Server {
 	var servers []server.Server
 	timeouts := server.ServerTimeouts{
-		ReadTimeout:  setting.App.Server.ReadTimeout,
-		WriteTimeout: setting.App.Server.WriteTimeout,
+		ReadTimeout:  cfg.Server.ReadTimeout,
+		WriteTimeout: cfg.Server.WriteTimeout,
 	}
 
-	if setting.App.BindAddress != "" {
-		tcpServer := server.NewTCPServer(ctx, handler, setting.App.BindAddress, timeouts)
+	if cfg.BindAddress != "" {
+		tcpServer := server.NewTCPServer(ctx, handler, cfg.BindAddress, timeouts)
 		servers = append(servers, tcpServer)
 	}
 
-	if setting.App.TLSAddress != "" {
-		tlsServer := server.NewTLSServer(ctx, handler, setting.App.TLSAddress, setting.App.TLSCrtPath, setting.App.TLSKeyPath, timeouts)
+	if cfg.TLSAddress != "" {
+		tlsServer := server.NewTLSServer(ctx, handler, cfg.TLSAddress, cfg.TLSCrtPath, cfg.TLSKeyPath, timeouts)
 		servers = append(servers, tlsServer)
-		if setting.App.EnableHTTP3 {
-			quicServer := server.NewQuicServer(ctx, tlsServer, setting.App.TLSAddress, setting.App.TLSCrtPath, setting.App.TLSKeyPath)
+		if cfg.EnableHTTP3 {
+			quicServer := server.NewQuicServer(ctx, tlsServer, cfg.TLSAddress, cfg.TLSCrtPath, cfg.TLSKeyPath)
 			servers = append(servers, quicServer)
 		}
 	}
