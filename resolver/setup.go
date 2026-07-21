@@ -7,11 +7,18 @@ import (
 	"strings"
 
 	"github.com/dcarrillo/whatismyip/internal/metrics"
-	"github.com/dcarrillo/whatismyip/internal/setting"
 	"github.com/dcarrillo/whatismyip/internal/validator/uuid"
 	"github.com/miekg/dns"
 	"github.com/patrickmn/go-cache"
 )
+
+type Settings struct {
+	Domain          string
+	ResourceRecords []string
+	RedirectPort    string
+	IPv4            []string
+	IPv6            []string
+}
 
 type Resolver struct {
 	handler *dns.ServeMux
@@ -29,11 +36,11 @@ func ensureDotSuffix(s string) string {
 	return s
 }
 
-func Setup(store *cache.Cache) (*Resolver, error) {
-	domain := ensureDotSuffix(setting.App.Resolver.Domain)
+func Setup(store *cache.Cache, cfg Settings) (*Resolver, error) {
+	domain := ensureDotSuffix(cfg.Domain)
 
-	rr := make([]dns.RR, 0, len(setting.App.Resolver.ResourceRecords))
-	for _, res := range setting.App.Resolver.ResourceRecords {
+	rr := make([]dns.RR, 0, len(cfg.ResourceRecords))
+	for _, res := range cfg.ResourceRecords {
 		record, err := dns.NewRR(domain + " " + res)
 		if err != nil {
 			return nil, fmt.Errorf("parsing resource record %q: %w", res, err)
@@ -41,11 +48,11 @@ func Setup(store *cache.Cache) (*Resolver, error) {
 		rr = append(rr, record)
 	}
 
-	ipv4, err := parseIPs(setting.App.Resolver.Ipv4)
+	ipv4, err := parseIPs(cfg.IPv4)
 	if err != nil {
 		return nil, fmt.Errorf("parsing ipv4 addresses: %w", err)
 	}
-	ipv6, err := parseIPs(setting.App.Resolver.Ipv6)
+	ipv6, err := parseIPs(cfg.IPv6)
 	if err != nil {
 		return nil, fmt.Errorf("parsing ipv6 addresses: %w", err)
 	}

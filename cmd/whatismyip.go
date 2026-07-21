@@ -41,7 +41,13 @@ func main() {
 	if setting.App.Resolver.Domain != "" {
 		store := cache.New(1*time.Minute, 10*time.Minute)
 		var dnsEngine *resolver.Resolver
-		if dnsEngine, err = resolver.Setup(store); err != nil {
+		if dnsEngine, err = resolver.Setup(store, resolver.Settings{
+			Domain:          setting.App.Resolver.Domain,
+			ResourceRecords: setting.App.Resolver.ResourceRecords,
+			RedirectPort:    setting.App.Resolver.RedirectPort,
+			IPv4:            setting.App.Resolver.Ipv4,
+			IPv6:            setting.App.Resolver.Ipv6,
+		}); err != nil {
 			log.Fatalf("Invalid resolver configuration: %s", err)
 		}
 		nameServer := server.NewDNSServer(context.Background(), dnsEngine.Handler())
