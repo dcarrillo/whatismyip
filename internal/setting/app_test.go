@@ -164,9 +164,9 @@ func TestParseFlags(t *testing.T) {
 
 	for _, tt := range flags {
 		t.Run(strings.Join(tt.args, " "), func(t *testing.T) {
-			_, _, err := Setup(tt.args)
+			cfg, _, err := Setup(tt.args)
 			require.Nil(t, err)
-			assert.True(t, reflect.DeepEqual(App, tt.conf))
+			assert.True(t, reflect.DeepEqual(cfg, tt.conf))
 		})
 	}
 }

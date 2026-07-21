@@ -51,14 +51,6 @@ const defaultAddress = ":8080"
 
 var ErrVersion = errors.New("setting: version requested")
 
-var App = Settings{
-	// hard-coded for the time being
-	Server: serverSettings{
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
-	},
-}
-
 func Setup(args []string) (cfg Settings, output string, err error) {
 	flags := flag.NewFlagSet("whatismyip", flag.ContinueOnError)
 	var buf bytes.Buffer
@@ -173,7 +165,6 @@ func Setup(args []string) (cfg Settings, output string, err error) {
 		}
 	}
 
-	App = cfg
 	return cfg, buf.String(), nil
 }
 
