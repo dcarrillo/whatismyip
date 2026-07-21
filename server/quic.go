@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/dcarrillo/whatismyip/internal/setting"
 	"github.com/quic-go/quic-go/http3"
 )
 
@@ -14,18 +13,24 @@ type Quic struct {
 	server    *http3.Server
 	tlsServer *TLS
 	ctx       context.Context
+	addr      string
+	crtPath   string
+	keyPath   string
 }
 
-func NewQuicServer(ctx context.Context, tlsServer *TLS) *Quic {
+func NewQuicServer(ctx context.Context, tlsServer *TLS, addr, crt, key string) *Quic {
 	return &Quic{
 		tlsServer: tlsServer,
 		ctx:       ctx,
+		addr:      addr,
+		crtPath:   crt,
+		keyPath:   key,
 	}
 }
 
 func (q *Quic) Start() {
 	q.server = &http3.Server{
-		Addr:    setting.App.TLSAddress,
+		Addr:    q.addr,
 		Handler: q.tlsServer.server.Handler,
 	}
 
@@ -38,9 +43,9 @@ func (q *Quic) Start() {
 		parentHandler.ServeHTTP(rw, req)
 	})
 
-	log.Printf("Starting QUIC server listening on %s (udp)", setting.App.TLSAddress)
+	log.Printf("Starting QUIC server listening on %s (udp)", q.addr)
 	go func() {
-		if err := q.server.ListenAndServeTLS(setting.App.TLSCrtPath, setting.App.TLSKeyPath); err != nil &&
+		if err := q.server.ListenAndServeTLS(q.crtPath, q.keyPath); err != nil &&
 			!errors.Is(err, http.ErrServerClosed) {
 			log.Fatal(err)
 		}

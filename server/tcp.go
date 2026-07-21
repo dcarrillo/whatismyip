@@ -5,32 +5,40 @@ import (
 	"errors"
 	"log"
 	"net/http"
-
-	"github.com/dcarrillo/whatismyip/internal/setting"
+	"time"
 )
 
-type TCP struct {
-	server  *http.Server
-	handler http.Handler
-	ctx     context.Context
+type ServerTimeouts struct {
+	ReadTimeout  time.Duration
+	WriteTimeout time.Duration
 }
 
-func NewTCPServer(ctx context.Context, handler http.Handler) *TCP {
+type TCP struct {
+	server   *http.Server
+	handler  http.Handler
+	ctx      context.Context
+	addr     string
+	timeouts ServerTimeouts
+}
+
+func NewTCPServer(ctx context.Context, handler http.Handler, addr string, timeouts ServerTimeouts) *TCP {
 	return &TCP{
-		handler: handler,
-		ctx:     ctx,
+		handler:  handler,
+		ctx:      ctx,
+		addr:     addr,
+		timeouts: timeouts,
 	}
 }
 
 func (t *TCP) Start() {
 	t.server = &http.Server{
-		Addr:         setting.App.BindAddress,
+		Addr:         t.addr,
 		Handler:      t.handler,
-		ReadTimeout:  setting.App.Server.ReadTimeout,
-		WriteTimeout: setting.App.Server.WriteTimeout,
+		ReadTimeout:  t.timeouts.ReadTimeout,
+		WriteTimeout: t.timeouts.WriteTimeout,
 	}
 
-	log.Printf("Starting TCP server listening on %s", setting.App.BindAddress)
+	log.Printf("Starting TCP server listening on %s", t.addr)
 	go func() {
 		if err := t.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatal(err)

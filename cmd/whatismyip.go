@@ -67,7 +67,11 @@ func main() {
 	servers = slices.Concat(servers, setupHTTPServers(context.Background(), engine.Handler()))
 
 	if setting.App.PrometheusAddress != "" {
-		prometheusServer := server.NewPrometheusServer(context.Background())
+		prometheusServer := server.NewPrometheusServer(context.Background(), setting.App.PrometheusAddress,
+			server.ServerTimeouts{
+				ReadTimeout:  setting.App.Server.ReadTimeout,
+				WriteTimeout: setting.App.Server.WriteTimeout,
+			})
 		servers = append(servers, prometheusServer)
 	}
 
@@ -101,17 +105,21 @@ func setupEngine() *gin.Engine {
 
 func setupHTTPServers(ctx context.Context, handler http.Handler) []server.Server {
 	var servers []server.Server
+	timeouts := server.ServerTimeouts{
+		ReadTimeout:  setting.App.Server.ReadTimeout,
+		WriteTimeout: setting.App.Server.WriteTimeout,
+	}
 
 	if setting.App.BindAddress != "" {
-		tcpServer := server.NewTCPServer(ctx, handler)
+		tcpServer := server.NewTCPServer(ctx, handler, setting.App.BindAddress, timeouts)
 		servers = append(servers, tcpServer)
 	}
 
 	if setting.App.TLSAddress != "" {
-		tlsServer := server.NewTLSServer(ctx, handler)
+		tlsServer := server.NewTLSServer(ctx, handler, setting.App.TLSAddress, setting.App.TLSCrtPath, setting.App.TLSKeyPath, timeouts)
 		servers = append(servers, tlsServer)
 		if setting.App.EnableHTTP3 {
-			quicServer := server.NewQuicServer(ctx, tlsServer)
+			quicServer := server.NewQuicServer(ctx, tlsServer, setting.App.TLSAddress, setting.App.TLSCrtPath, setting.App.TLSKeyPath)
 			servers = append(servers, quicServer)
 		}
 	}
