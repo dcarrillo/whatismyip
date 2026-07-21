@@ -47,11 +47,14 @@ const (
 	domain            = "dns.example.com"
 )
 
+var rt *Router
+
 func TestMain(m *testing.M) {
 	app = gin.Default()
 	app.TrustedPlatform = trustedHeader
 	svc, _ := service.NewGeo(context.Background(), "../test/GeoIP2-City-Test.mmdb", "../test/GeoLite2-ASN-Test.mmdb")
-	Setup(app, svc)
+	rt = NewRouter(svc, trustedHeader, "", "", false)
+	Setup(app, rt)
 
 	os.Exit(m.Run())
 }

@@ -1,11 +1,13 @@
 package router
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/dcarrillo/whatismyip/internal/setting"
+	"github.com/dcarrillo/whatismyip/service"
+	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -27,12 +29,11 @@ Header2: value22
 Header3: value3
 Host: 
 `
-	_, _, _ = setting.Setup([]string{
-		"-geoip2-city", "city",
-		"-geoip2-asn", "asn",
-		"-trusted-header", trustedHeader,
-		"-trusted-port-header", trustedPortHeader,
-	})
+	svc, _ := service.NewGeo(context.Background(), "../test/GeoIP2-City-Test.mmdb", "../test/GeoLite2-ASN-Test.mmdb")
+	app := gin.Default()
+	app.TrustedPlatform = trustedHeader
+	rt := NewRouter(svc, trustedHeader, trustedPortHeader, "", false)
+	Setup(app, rt)
 	req, _ := http.NewRequest("GET", "/headers", nil)
 	req.Header = map[string][]string{
 		"Header1": {"value1"},
