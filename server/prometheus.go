@@ -13,10 +13,10 @@ type Prometheus struct {
 	server   *http.Server
 	ctx      context.Context
 	addr     string
-	timeouts ServerTimeouts
+	timeouts Timeouts
 }
 
-func NewPrometheusServer(ctx context.Context, addr string, timeouts ServerTimeouts) *Prometheus {
+func NewPrometheusServer(ctx context.Context, addr string, timeouts Timeouts) *Prometheus {
 	return &Prometheus{
 		ctx:      ctx,
 		addr:     addr,

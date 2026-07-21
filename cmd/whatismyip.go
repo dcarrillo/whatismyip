@@ -69,7 +69,7 @@ func main() {
 
 	if cfg.PrometheusAddress != "" {
 		prometheusServer := server.NewPrometheusServer(context.Background(), cfg.PrometheusAddress,
-			server.ServerTimeouts{
+			server.Timeouts{
 				ReadTimeout:  cfg.Server.ReadTimeout,
 				WriteTimeout: cfg.Server.WriteTimeout,
 			})
@@ -106,7 +106,7 @@ func setupEngine(cfg setting.Settings) *gin.Engine {
 
 func setupHTTPServers(ctx context.Context, handler http.Handler, cfg setting.Settings) []server.Server {
 	var servers []server.Server
-	timeouts := server.ServerTimeouts{
+	timeouts := server.Timeouts{
 		ReadTimeout:  cfg.Server.ReadTimeout,
 		WriteTimeout: cfg.Server.WriteTimeout,
 	}

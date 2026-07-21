@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-type ServerTimeouts struct {
+type Timeouts struct {
 	ReadTimeout  time.Duration
 	WriteTimeout time.Duration
 }
@@ -18,10 +18,10 @@ type TCP struct {
 	handler  http.Handler
 	ctx      context.Context
 	addr     string
-	timeouts ServerTimeouts
+	timeouts Timeouts
 }
 
-func NewTCPServer(ctx context.Context, handler http.Handler, addr string, timeouts ServerTimeouts) *TCP {
+func NewTCPServer(ctx context.Context, handler http.Handler, addr string, timeouts Timeouts) *TCP {
 	return &TCP{
 		handler:  handler,
 		ctx:      ctx,

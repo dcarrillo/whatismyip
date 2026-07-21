@@ -145,17 +145,17 @@ func TestClientPort(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			app := gin.Default()
-			app.TrustedPlatform = tt.args.trustedHeader
-			rt := NewRouter(nil, tt.args.trustedHeader, tt.args.trustedPortHeader, "", false)
-			Setup(app, rt)
+			engine := gin.Default()
+			engine.TrustedPlatform = tt.args.trustedHeader
+			r := NewRouter(nil, tt.args.trustedHeader, tt.args.trustedPortHeader, "", false)
+			Setup(engine, r)
 
 			req, _ := http.NewRequest("GET", "/client-port", nil)
 			req.RemoteAddr = net.JoinHostPort(testIP.ipv4, "1000")
 			req.Header = tt.args.headers
 
 			w := httptest.NewRecorder()
-			app.ServeHTTP(w, req)
+			engine.ServeHTTP(w, req)
 
 			assert.Equal(t, 200, w.Code)
 			assert.Equal(t, contentType.text, w.Header().Get("Content-Type"))
@@ -176,10 +176,10 @@ func TestNotFound(t *testing.T) {
 
 func TestJSON(t *testing.T) {
 	svc, _ := service.NewGeo(context.Background(), "../test/GeoIP2-City-Test.mmdb", "../test/GeoLite2-ASN-Test.mmdb")
-	app := gin.Default()
-	app.TrustedPlatform = trustedHeader
-	rt := NewRouter(svc, trustedHeader, trustedPortHeader, "", false)
-	Setup(app, rt)
+	engine := gin.Default()
+	engine.TrustedPlatform = trustedHeader
+	r := NewRouter(svc, trustedHeader, trustedPortHeader, "", false)
+	Setup(engine, r)
 
 	type args struct {
 		ip string
@@ -213,7 +213,7 @@ func TestJSON(t *testing.T) {
 			req.Header.Set(trustedPortHeader, "1001")
 
 			w := httptest.NewRecorder()
-			app.ServeHTTP(w, req)
+			engine.ServeHTTP(w, req)
 
 			assert.Equal(t, 200, w.Code)
 			assert.Equal(t, contentType.json, w.Header().Get("Content-Type"))
@@ -240,10 +240,10 @@ Header1: one
 Host: test
 `
 	svc, _ := service.NewGeo(context.Background(), "../test/GeoIP2-City-Test.mmdb", "../test/GeoLite2-ASN-Test.mmdb")
-	app := gin.Default()
-	app.TrustedPlatform = trustedHeader
-	rt := NewRouter(svc, trustedHeader, trustedPortHeader, "", false)
-	Setup(app, rt)
+	engine := gin.Default()
+	engine.TrustedPlatform = trustedHeader
+	r := NewRouter(svc, trustedHeader, trustedPortHeader, "", false)
+	Setup(engine, r)
 
 	req, _ := http.NewRequest("GET", "/all", nil)
 	req.RemoteAddr = net.JoinHostPort(testIP.ipv4, "1000")
@@ -253,7 +253,7 @@ Host: test
 	req.Header.Set("Header1", "one")
 
 	w := httptest.NewRecorder()
-	app.ServeHTTP(w, req)
+	engine.ServeHTTP(w, req)
 
 	assert.Equal(t, 200, w.Code)
 	assert.Equal(t, contentType.text, w.Header().Get("Content-Type"))

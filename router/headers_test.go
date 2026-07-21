@@ -30,10 +30,10 @@ Header3: value3
 Host: 
 `
 	svc, _ := service.NewGeo(context.Background(), "../test/GeoIP2-City-Test.mmdb", "../test/GeoLite2-ASN-Test.mmdb")
-	app := gin.Default()
-	app.TrustedPlatform = trustedHeader
-	rt := NewRouter(svc, trustedHeader, trustedPortHeader, "", false)
-	Setup(app, rt)
+	engine := gin.Default()
+	engine.TrustedPlatform = trustedHeader
+	r := NewRouter(svc, trustedHeader, trustedPortHeader, "", false)
+	Setup(engine, r)
 	req, _ := http.NewRequest("GET", "/headers", nil)
 	req.Header = map[string][]string{
 		"Header1": {"value1"},
@@ -44,7 +44,7 @@ Host:
 	req.Header.Set(trustedPortHeader, "1025")
 
 	w := httptest.NewRecorder()
-	app.ServeHTTP(w, req)
+	engine.ServeHTTP(w, req)
 
 	assert.Equal(t, 200, w.Code)
 	assert.Equal(t, contentType.text, w.Header().Get("Content-Type"))

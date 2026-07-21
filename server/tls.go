@@ -15,10 +15,10 @@ type TLS struct {
 	addr     string
 	crtPath  string
 	keyPath  string
-	timeouts ServerTimeouts
+	timeouts Timeouts
 }
 
-func NewTLSServer(ctx context.Context, handler http.Handler, addr, crt, key string, timeouts ServerTimeouts) *TLS {
+func NewTLSServer(ctx context.Context, handler http.Handler, addr, crt, key string, timeouts Timeouts) *TLS {
 	return &TLS{
 		handler:  handler,
 		ctx:      ctx,
