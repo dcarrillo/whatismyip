@@ -13,7 +13,9 @@ import (
 
 	validator "github.com/dcarrillo/whatismyip/internal/validator/uuid"
 	"github.com/dcarrillo/whatismyip/router"
-	"github.com/docker/docker/api/types"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
+	"github.com/moby/moby/client"
 	"github.com/quic-go/quic-go/http3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -90,16 +92,25 @@ func TestContainerIntegration(t *testing.T) {
 				Dockerfile:    "./test/Dockerfile",
 				PrintBuildLog: true,
 				KeepImage:     false,
-				BuildOptionsModifier: func(buildOptions *types.ImageBuildOptions) {
+				BuildOptionsModifier: func(buildOptions *client.ImageBuildOptions) {
 					buildOptions.Target = "test"
 				},
 			},
 			ExposedPorts: []string{
-				"8000:8000",
-				"8001:8001",
-				"8001:8001/udp",
-				"9100:9100",
-				"53531:53/udp",
+				"8000/tcp",
+				"8001/tcp",
+				"8001/udp",
+				"9100/tcp",
+				"53/udp",
+			},
+			HostConfigModifier: func(hostConfig *container.HostConfig) {
+				hostConfig.PortBindings = network.PortMap{
+					network.MustParsePort("8000/tcp"): []network.PortBinding{{HostPort: "8000"}},
+					network.MustParsePort("8001/tcp"): []network.PortBinding{{HostPort: "8001"}},
+					network.MustParsePort("8001/udp"): []network.PortBinding{{HostPort: "8001"}},
+					network.MustParsePort("9100/tcp"): []network.PortBinding{{HostPort: "9100"}},
+					network.MustParsePort("53/udp"):   []network.PortBinding{{HostPort: "53531"}},
+				}
 			},
 			Cmd: []string{
 				"-geoip2-city", "/GeoIP2-City-Test.mmdb",
@@ -274,12 +285,17 @@ func TestContainerIntegrationDisableScan(t *testing.T) {
 				Dockerfile:    "./test/Dockerfile",
 				PrintBuildLog: true,
 				KeepImage:     false,
-				BuildOptionsModifier: func(buildOptions *types.ImageBuildOptions) {
+				BuildOptionsModifier: func(buildOptions *client.ImageBuildOptions) {
 					buildOptions.Target = "test"
 				},
 			},
 			ExposedPorts: []string{
-				"8000:8000",
+				"8000/tcp",
+			},
+			HostConfigModifier: func(hostConfig *container.HostConfig) {
+				hostConfig.PortBindings = network.PortMap{
+					network.MustParsePort("8000/tcp"): []network.PortBinding{{HostPort: "8000"}},
+				}
 			},
 			Cmd: []string{
 				"-geoip2-city", "/GeoIP2-City-Test.mmdb",
