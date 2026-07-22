@@ -1,29 +1,20 @@
-FROM golang:1.25-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS builder
 
 ARG ARG_VERSION
+ARG TARGETOS
+ARG TARGETARCH
 ENV VERSION=$ARG_VERSION
 
 WORKDIR /app
-COPY go.mod .
-COPY go.sum .
+COPY go.mod go.sum ./
 RUN --mount=type=cache,target=/go/pkg/mod/ go mod download -x
 COPY . .
 
-FROM builder AS build-dev-app
-# hadolint ignore=DL3018
-RUN --mount=type=cache,target=/go/pkg/mod/ apk --no-cache add make && make build
-
-FROM builder AS build-prod-app
-# hadolint ignore=DL3018
-RUN apk --no-cache update && apk add --no-cache ca-certificates make upx \
+RUN --mount=type=cache,target=/go/pkg/mod/ apk --no-cache add make ca-certificates \
     && update-ca-certificates \
-    && make build \
-    && upx --best --lzma whatismyip
+    && GOOS=$TARGETOS GOARCH=$TARGETARCH make build
 
-FROM scratch AS dev
-COPY --from=build-dev-app /app/whatismyip /usr/bin/
-ENTRYPOINT ["whatismyip"]
-
-FROM scratch AS prod
-COPY --from=build-prod-app /app/whatismyip /usr/bin/
+FROM scratch
+COPY --from=builder /app/whatismyip /usr/bin/
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 ENTRYPOINT ["whatismyip"]
