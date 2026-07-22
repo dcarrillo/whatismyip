@@ -202,7 +202,7 @@ Download the latest version from [github](https://github.com/dcarrillo/whatismyi
 
 ## Docker
 
-An ultra-light (~6MB) image is available on [docker hub](https://hub.docker.com/r/dcarrillo/whatismyip). ~Since version `2.1.2`, the binary is compressed using [upx](https://github.com/upx/upx).~
+A very lightweight (~9MB) image is available on [docker hub](https://hub.docker.com/r/dcarrillo/whatismyip). ~Since version `2.1.2`, the binary is compressed using [upx](https://github.com/upx/upx).~
 
 ### Run a container locally using test databases
 
