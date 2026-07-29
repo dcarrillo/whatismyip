@@ -4,6 +4,7 @@
 [![CodeQL](https://github.com/dcarrillo/whatismyip/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/dcarrillo/whatismyip/actions/workflows/codeql-analysis.yml)
 [![GitHub release](https://img.shields.io/github/release/dcarrillo/whatismyip.svg)](https://github.com/dcarrillo/whatismyip/releases/)
 [![License Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](./LICENSE)
+[![Docker Pulls](https://img.shields.io/docker/pulls/dcarrillo/whatismyip)](https://hub.docker.com/r/dcarrillo/whatismyip)
 
 - [Features](#features)
 - [Endpoints](#endpoints)
