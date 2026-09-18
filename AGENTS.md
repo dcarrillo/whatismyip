@@ -1,6 +1,6 @@
 # whatismyip
 
-Single-binary Go service: HTTP/TLS/QUIC server that returns the client's IP, geolocation, ASN, headers, TCP port scan, and DNS discovery. Uses [gin](https://github.com/gin-gonic/gin) + [httprouter](https://github.com/julienschmidt/httprouter). Requires Go >= 1.25.
+Single-binary Go service: HTTP/TLS/QUIC server that returns the client's IP, geolocation, ASN, headers, TCP port scan, and DNS discovery. Uses [gin](https://github.com/gin-gonic/gin) + [httprouter](https://github.com/julienschmidt/httprouter). Requires Go >= 1.27.
 
 ## Commands
 

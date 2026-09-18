@@ -120,7 +120,7 @@ curl $(cat /proc/sys/kernel/random/uuid).dns.ifconfig.es
 
 ## Build
 
-Golang >= 1.25 is required.
+Golang >= 1.27 is required.
 
 `make build`
 
