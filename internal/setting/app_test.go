@@ -3,6 +3,7 @@ package setting
 import (
 	"flag"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -187,6 +188,8 @@ func TestParseFlagVersion(t *testing.T) {
 	_, output, err := Setup([]string{"-version"})
 	assert.ErrorIs(t, err, ErrVersion)
 	assert.Contains(t, output, "whatismyip version")
+	assert.Contains(t, output, runtime.Version())
+	assert.Contains(t, output, runtime.GOOS+"/"+runtime.GOARCH)
 }
 
 func TestParseFlagTemplate(t *testing.T) {

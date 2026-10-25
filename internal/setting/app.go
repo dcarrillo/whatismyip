@@ -128,7 +128,7 @@ func Setup(args []string) (cfg Settings, output string, err error) {
 	}
 
 	if cfg.version {
-		return cfg, fmt.Sprintf("whatismyip version %s", core.Version), ErrVersion
+		return cfg, core.Info(), ErrVersion
 	}
 
 	if (cfg.GeodbPath.City != "" && cfg.GeodbPath.ASN == "") || (cfg.GeodbPath.City == "" && cfg.GeodbPath.ASN != "") {
